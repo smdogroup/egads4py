@@ -21,21 +21,18 @@ mtype = egads.CIRCLE
 ego.makeGeometry(oclass, mtype, rdata=[loc, xaxis, yaxis, radius])
 r, p = ego.getRange()
 r = ego.evaluate(param)
-print r
 
 # Make a line
 mtype = egads.LINE
 ego.makeGeometry(oclass, mtype, rdata=[loc, direct])
 r, p = ego.getRange()
 r = ego.evaluate(param)
-print r
 
 # Make an ellipse
 mtype = egads.ELLIPSE
 ego.makeGeometry(oclass, mtype, rdata=[loc, xaxis, yaxis, major, minor])
 r, p = ego.getRange()
 r = ego.evaluate(param)
-print r
 
 # Make a parabola
 mtype = egads.PARABOLA
@@ -43,7 +40,6 @@ focus = 3.0
 ego.makeGeometry(oclass, mtype, rdata=[loc, xaxis, yaxis, focus])
 r, p = ego.getRange()
 r = ego.evaluate(param)
-print r
 
 # Make a hyperbola
 mtype = egads.HYPERBOLA

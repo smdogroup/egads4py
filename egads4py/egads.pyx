@@ -61,6 +61,70 @@ FACEBODY = EGADS_FACEBODY
 SHEETBODY = EGADS_SHEETBODY
 SOLIDBODY = EGADS_SOLIDBODY
 
+# /* ATTRIBUTE TYPES */
+ATTRINT = EGADS_ATTRINT
+ATTRREAL = EGADS_ATTRREAL
+ATTRSTRING = EGADS_ATTRSTRING
+ATTRCSYS = EGADS_ATTRCSYS
+
+# /* SOLID BOOLEAN OPERATIONS */
+SUBTRACTION = EGADS_SUBTRACTION
+INTERSECTION = EGADS_INTERSECTION
+FUSION = EGADS_FUSION
+
+# /* SOLID BODY TYPES */
+BOX = EGADS_BOX
+SPHERE = EGADS_SPHERE
+CONE = EGADS_CONE
+CYLINDER = EGADS_CYLINDER
+TORUS = EGADS_TORUS
+
+# /* ISOCLINE TYPES */
+UISO = EGADS_UISO
+VISO = EGADS_VISO
+
+# /* FACE SOURCE TYPES */
+NODEOFF = EGADS_NODEOFF
+EDGEOFF = EGADS_EDGEOFF
+FACEDUP = EGADS_FACEDUP
+FACECUT = EGADS_FACECUT
+FACEOFF = EGADS_FACEOFF
+
+oclass_str = {
+    NIL : "EGADS_NIL",
+    EMPTY : "EGADS_EMPTY",
+    REFERENCE : "EGADS_REFERENCE",
+    PCURVE : "EGADS_PCURVE",
+    CURVE : "EGADS_CURVE",
+    SURFACE : "EGADS_SURFACE",
+    NODE : "EGADS_NODE",
+    EDGE : "EGADS_EDGE",
+    LOOP : "EGADS_LOOP",
+    FACE : "EGADS_FACE",
+    SHELL : "EGADS_SHELL",
+    BODY : "EGADS_BODY",
+    MODEL : "EGADS_MODEL" }
+
+oclass_to_type_str = {
+    PCURVE : {
+        LINE : "EGADS_LINE",
+        CIRCLE : "EGADS_CIRCLE",
+        ELLIPSE : "EGADS_ELLIPSE",
+        PARABOLA : "EGADS_PARABOLA",
+        HYPERBOLA : "EGADS_HYPERBOLA",
+        TRIMMED : "EGADS_TRIMMED",
+        BEZIER : "EGADS_BEZIER",
+        BSPLINE : "EGADS_BSPLINE",
+        OFFSET : "EGADS_OFFSET" },
+    SURFACE : {
+        PLANE : "EGADS_PLANE",
+        SPHERICAL : "EGADS_SPHERICAL",
+        CYLINDRICAL : "EGADS_CYLINDRICAL",
+        REVOLUTION : "EGADS_REVOLUTION",
+        TOROIDAL : "EGADS_TOROIDAL",
+        CONICAL : "EGADS_CONICAL",
+        EXTRUSION : "EGADS_EXTRUSION" } }
+
 # Error codes
 EGADS_TESSTATE = _EGADS_TESSTATE
 EGADS_EXISTS = _EGADS_EXISTS
@@ -95,24 +159,6 @@ EGADS_NULLOBJ = _EGADS_NULLOBJ
 EGADS_NOTFOUND = _EGADS_NOTFOUND
 EGADS_SUCCESS = _EGADS_SUCCESS
 EGADS_OUTSIDE = _EGADS_OUTSIDE
-
-# Create a dictionary
-oclass_types = {
-    NIL: [],
-    EMPTY: [],
-    REFERENCE: [],
-    PCURVE: [LINE, CIRCLE, ELLIPSE, PARABOLA, HYPERBOLA,
-             TRIMMED, BEZIER, BSPLINE, OFFSET],
-    CURVE: [LINE, CIRCLE, ELLIPSE, PARABOLA, HYPERBOLA,
-            TRIMMED, BEZIER, BSPLINE, OFFSET],
-    SURFACE: [PLANE, SPHERICAL, CYLINDRICAL, REVOLUTION,
-              TOROIDAL, CONICAL, EXTRUSION],
-    EDGE: [],
-    LOOP: [],
-    FACE: [],
-    SHELL: [],
-    BODY: [],
-    MODEL: []}
 
 egads_error_codes = {
     EGADS_TESSTATE : "EGADS_TESSTATE",
@@ -175,18 +221,29 @@ cdef class pyego:
         self.ptr = NULL
 
     def __dealloc__(self):
-        cdef int stat
-        if self.ptr:
-            stat = EG_deleteObject(self.ptr)
-            if stat:
-                _checkErr(stat)
+        # if self.ptr:
+        #     EG_deleteObject(self.ptr)
+        pass
 
     def setOutLevel(self, int outlevel):
+        EG_setOutLevel(self.context, outlevel)
+
+    def getInfo(self):
         cdef int stat
-        stat = EG_setOutLevel(self.context, outlevel)
+        cdef int oclass
+        cdef int mtype
+        cdef ego topObj
+        cdef ego prev
+        cdef ego next
+        stat = EG_getInfo(self.ptr, &oclass, &mtype, &topObj, &prev, &next)
         if stat:
             _checkErr(stat)
+        return oclass, mtype
 
+    def getInfoStr(self):
+        oclass, mtype = self.getInfo()
+        return oclass_str[oclass]
+        
     def loadModel(self, str filename, int bflag=1):
         cdef int stat
         if self.ptr:
@@ -350,18 +407,6 @@ cdef class pyego:
                     r[15], r[16], r[17]]
         return None
 
-    # int  EG_invEvaluate( const ego geom, double *xyz, double *param,
-    #                               double *results )
-    # int  EG_invEvaluateGuess( const ego geom, double *xyz, 
-    #                                    double *param, double *results )
-    # int  EG_arcLength( const ego geom, double t1, double t2,
-    #                             double *alen )
-    # int  EG_curvature( const ego geom, const double *param, 
-    #                             double *results )
-    # int  EG_approximate( ego context, int maxdeg, double tol,
-    #                               const int *sizes, const double *xyzs,
-    #                               ego *bspline )
-
     def getTolerance(self):
         cdef int stat
         cdef double tol
@@ -376,6 +421,14 @@ cdef class pyego:
         if stat:
             _checkErr(stat)
 
+    def getBody(self):
+        cdef int stat
+        body = pyego(self)
+        stat = EG_getBody(self.ptr, &body.ptr)
+        if stat:
+            _checkErr(stat)
+        return body
+
     def getTopology(self):
         cdef int stat
         cdef ego geom = NULL
@@ -383,17 +436,17 @@ cdef class pyego:
         cdef int mtype
         cdef double limits[4]
         cdef int nchildren
-        cdef ego *children
+        cdef ego *childarray
         cdef int *senses
         stat = EG_getTopology(self.ptr, &geom, &oclass, &mtype,
-                              limits, &nchildren, &children, &senses)
+                              limits, &nchildren, &childarray, &senses)
         if stat:
             _checkErr(stat)
-        childlst = []
+        children = []
         for i in range(nchildren):
             c = pyego(self)
-            c.ptr = children[i]
-            childlst.append(c)
+            c.ptr = childarray[i]
+            children.append(c)
 
         sens = None
         if oclass == LOOP or oclass == SHELL:
@@ -409,14 +462,15 @@ cdef class pyego:
             lim = [limits[0], limits[1], limits[2], limits[3]]
         geo = pyego(self)
         geo.ptr = geom
-        return geo, oclass, mtype, lim, childlst, sens
+        return geo, oclass, mtype, lim, children, sens
 
-    def makeTopology(self, int oclass, int mtype,
-                     lims, childlst, sens):
+    def makeTopology(self, int oclass, int mtype=0,
+                     children=None, sens=None, rdata=None, refgeo=True):
         cdef int stat
-        cdef double limits[4]
+        cdef ego refptr = NULL
+        cdef double data[4]
         cdef int nchildren = 0
-        cdef ego *chilren = NULL
+        cdef ego *childarray = NULL
         cdef int *senses = NULL
         errmsg = None
         if oclass == EDGE:
@@ -434,42 +488,54 @@ cdef class pyego:
         elif oclass == BODY:
             if (mtype != WIREBODY and mtype != FACEBODY and
                 mtype != SHEETBODY and mtype != SOLIDBODY):
-                errmsg = 'BODY must be WIREBODY, FACEBODY, SHEETBODY or SOLIDBODY'
+                errmsg = 'BODY must be WIREBODY, FACEBODY'
+                errmsg += ', SHEETBODY or SOLIDBODY'
         if errmsg is not None:
             raise ValueError(errmsg)
         
-        if (oclass == FACE or oclass == LOOP) and len(childlst) != len(sens):
-            raise ValueError('Children and senses list must be of equal length')
-        
-        if oclass == EDGE:
-            limits[0] = lims[0]
-            limits[1] = lims[1]
+        if ((oclass == SHELL or oclass == LOOP) and
+            len(children) != len(sens)):
+            errmsg = 'Children and senses list must be of equal length'
+            raise ValueError(errmsg)
+
+        if oclass == NODE:
+            data[0] = rdata[0]
+            data[1] = rdata[1]
+            data[2] = rdata[2]
+        elif oclass == EDGE:
+            data[0] = rdata[0]
+            data[1] = rdata[1]
         elif oclass == FACE:
-            limits[0] = lims[0]
-            limits[1] = lims[1]
-            limits[2] = lims[2]
-            limits[3] = lims[3]
+            data[0] = rdata[0]
+            data[1] = rdata[1]
+            data[2] = rdata[2]
+            data[3] = rdata[3]
 
-        nchildren = len(childlst)
-        children = <ego*>malloc(nchildren*sizeof(ego))
-        for i in range(nchildren):
-            children[i] = (<pyego>childlst[i]).ptr
+        if children is not None:
+            nchildren = len(children)
+            childarray = <ego*>malloc(nchildren*sizeof(ego))
+            for i in range(nchildren):
+                childarray[i] = (<pyego>children[i]).ptr
 
-        if oclass == SHELL or oclass == LOOP:
+        if oclass == FACE or oclass == LOOP:
             senses = <int*>malloc(nchildren*sizeof(int))
             for i in range(nchildren):
-                senses[i] = sens[i]        
+                senses[i] = sens[i]
+
+        if refgeo:
+            refptr = self.ptr
+        else:
+            refptr = NULL
             
         new = pyego(self)
-        stat = EG_makeTopology(self.context, self.ptr, oclass, mtype,
-                               limits, nchildren, children,
+        stat = EG_makeTopology(self.context, refptr, oclass, mtype,
+                               data, nchildren, childarray,
                                senses, &new.ptr)
         if stat:
             _checkErr(stat)
-        free(children)
+        free(childarray)
         free(senses)
         return new
-
 
     def makeLoop(self, list edges, pyego geom, double toler):
         cdef int stat 
@@ -486,9 +552,6 @@ cdef class pyego:
             _checkErr(stat)
         return new
 
-    # int  EG_getArea( ego object, const double *limits,
-    #                  double *area )
-
     def makeFace(self, pyego obj, int mtype, 
                  np.ndarray[double, ndim=1, mode='c'] limits):
         cdef int stat
@@ -496,6 +559,49 @@ cdef class pyego:
         stat = EG_makeFace(obj.ptr, mtype, <double*>limits.data, &new.ptr)
         if stat:
             _checkErr(stat)
+        return new
+
+    def makeSolidBody(self, int stype, rdata=None):
+        cdef int stat
+        cdef double *rptr = NULL
+        rvec = []
+        try:
+            if rdata is not None:
+                for item in rdata:
+                    if isinstance(item, (int, float)):
+                        rvec.append(item)
+                    else:
+                        rvec.extend(item)
+        except:
+            errmsg = 'Failed to convert real data'
+            raise ValueError(errmsg)
+        
+        if len(rvec) > 0:
+            rptr = <double*>malloc(len(rvec)*sizeof(double))
+            for i in range(len(rvec)):
+                rptr[i] = rvec[i]
+
+        body = pyego(self)
+        stat = EG_makeSolidBody(self.context, stype, rptr, &body.ptr)
+        if rptr:
+            free(rptr)
+        return body
+
+    def sewFaces(self, list objlist, double toler=0.0, int flag=0):
+        cdef ego context
+        cdef int nobj
+        cdef ego *objs
+
+        if len(objlist) > 0:
+            nobj = len(objlist)
+            objs = <ego*>malloc(nobj*sizeof(ego))
+            for i in range(nobj):
+                objs[i] = (<pyego>objlist[i]).ptr
+            new = pyego(self)
+            stat = EG_sewFaces(nobj, objs, toler, flag, &new.ptr)
+            if stat:
+                _checkErr(stat)
+            free(objs)
         return new
 
     def getBodyTopos(self, int oclass, pyego ref=None):
@@ -567,13 +673,6 @@ cdef class pyego:
         if stat:
             _checkErr(stat)
         return new
-
-    # int  EG_chamferBody( const ego src, int nedge, const ego *edges, 
-    #                      const ego *faces, double dis1, double dis2, 
-    #                      ego *result, int **facemap )
-    # int  EG_hollowBody( const ego src, int nface, const ego *faces, 
-    #                     double offset, int join,
-    #                     ego *result, int **facemap )
     
     def extrude(self, double dist, 
                 np.ndarray[double, ndim=1, mode='c'] _dir):
@@ -636,110 +735,3 @@ cdef class pyego:
         if stat:
             _checkErr(stat)
         return
-
-    # Set/retrieve attributes
-    # int  EG_attributeAdd( ego obj, const char *name, int type, int len,
-    #                       const int    *ints, 
-    #                       const double *reals,
-    #                       const char   *str )
-    # int  EG_attributeDel( ego object, const char *name )
-    # int  EG_attributeNum( const ego obj, int *num )
-    # int  EG_attributeGet( const ego obj, int index, const char **name,
-    #                                int *atype, int *len, 
-    #                                const int    **ints,
-    #                                const double **reals, 
-    #                                const char   **str )
-    # int  EG_attributeRet( const ego obj, const char *name, int *atype, 
-    #                                int *len, const int    **ints,
-    #                                          const double **reals, 
-    #                                          const char   **str )
-    # int  EG_attributeDup( const ego src, ego dst )
-
-
-    # int  EG_fitTriangles( ego context, int npts, double *xyzs,
-    #                                int ntris, const int *tris,
-    #                                const int *tric, double tol,
-    #                                ego *bspline )
-    # int  EG_otherCurve( const ego surface, const ego curve,
-    #                              double tol, ego *newcurve )
-    # int  EG_isSame( const ego geom1, const ego geom2 )
-    # int  EG_isoCline( const ego surface, int UV, double val,
-    #                            ego *newcurve )
-    # int  EG_convertToBSpline( ego geom, ego *bspline )
-    # int  EG_convertToBSplineRange( ego geom, const double *range,
-    #                                         ego *bspline )
-
-    # int  EG_indexBodyTopo( const ego body, const ego src )
-    # int  EG_inTopology( const ego topo, const double *xyz )
-    # int  EG_inFace( const ego face, const double *uv )
-    # int  EG_getEdgeUV( const ego face, const ego edge, int sense,
-    #                    double t, double *UV )
-    # int  EG_getBody( const ego object, ego *body )
-    # int  EG_makeSolidBody( ego context, int stype, const double *rvec,
-    #                        ego *body )
-    # int  EG_getBoundingBox( const ego topo, double *bbox )
-    # int  EG_getMassProperties( const ego topo, double *result )
-    # int  EG_isEquivalent( const ego topo1, const ego topo2 )
-    # int  EG_sewFaces( int nobj, const ego *objs, double toler,
-    #                  int flag, ego *result )
-    # int  EG_replaceFaces( const ego body, int nobj, ego *objs,
-    #                       ego *result )
-    # int  EG_mapBody( const ego sBody,   const ego dBody,
-    #                           const char *fAttr, ego *mapBody )
-    # int  EG_matchBodyFaces( const ego body1, const ego body2,
-    #                         double toler, int *nmatch, int **match )
-
-    # int  EG_setTessParam( ego context, int iparam, double value,
-    #                                double *oldvalue )
-    # int  EG_makeTessGeom( ego obj, double *params, int *sizes, 
-    #                                ego *tess )
-    # int  EG_getTessGeom( const ego tess, int *sizes, double **xyz )
-
-    # int  EG_makeTessBody( ego object, double *params, ego *tess )
-    # int  EG_remakeTess( ego tess, int nobj, ego *objs, 
-    #                              double *params )
-    # int  EG_mapTessBody( ego tess, ego body, ego *mapTess )
-    # int  EG_locateTessBody( const ego tess, int npt, const int *ifaces,
-    #                                  const double *uv, int *itri, 
-    #                                  double *results )
-
-    # int  EG_getTessEdge( const ego tess, int eIndex, int *len, 
-    #                               const double **xyz, const double **t )
-    # int  EG_getTessFace( const ego tess, int fIndex, int *len, 
-    #                               const double **xyz, const double **uv, 
-    #                               const int **ptype, const int **pindex, 
-    #                               int *ntri, const int **tris, 
-    #                               const int **tric )
-    # int  EG_getTessLoops( const ego tess, int fIndex, int *nloop,
-    #                                const int **lIndices )
-    # int  EG_getTessQuads( const ego tess, int *nquad,
-    #                                int **fIndices )
-    # int  EG_makeQuads( ego tess, double *params, int fIndex )
-    # int  EG_getQuads( const ego tess, int fIndex, int *len, 
-    #                               const double **xyz, const double **uv, 
-    #                               const int **ptype, const int **pindex, 
-    #                               int *npatch )
-    # int  EG_getPatch( const ego tess, int fIndex, int patch, 
-    #                            int *nu, int *nv, const int **ipts, 
-    #                            const int **bounds )
-                               
-    # int  EG_insertEdgeVerts( ego tess, int eIndex, int vIndex, 
-    #                                   int npts, double *t )
-    # int  EG_deleteEdgeVert( ego tess, int eIndex, int vIndex, 
-    #                                  int dir )
-    # int  EG_moveEdgeVert( ego tess, int eIndex, int vIndex, 
-    #                                double t )
- 
-    # int  EG_openTessBody( ego tess )
-    # int  EG_initTessBody( ego object, ego *tess )
-    # int  EG_statusTessBody( ego tess, ego *body, int *state, int *np )
-    # int  EG_setTessEdge( ego tess, int eIndex, int len,
-    #                               const double *xyz, const double *t )
-    # int  EG_setTessFace( ego tess, int fIndex, int len,
-    #                               const double *xyz, const double *uv,
-    #                               int ntri, const int *tris )
-    # int  EG_localToGlobal( const ego tess, int index, int local,
-    #                                 int *global )
-    # int  EG_getGlobal( const ego tess, int global, int *ptype,
-    #                             int *pindex, double *xyz )
-

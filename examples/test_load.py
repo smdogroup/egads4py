@@ -2,13 +2,21 @@ from egads4py import egads
 
 ego = egads.pyego()
 ego.loadModel('misc1.step')
+ego.setOutLevel(2)
 
-geo, oclass, mtype, lim, children, senses = ego.getTopology()
+geo, oclass, mtype, lim, body, senses = ego.getTopology()
 
-for c in children:
-    f = c.getBodyTopos(egads.FACE)
-    print len(f)
+for b in body:
+    faces = b.getBodyTopos(egads.FACE)
 
-print ego
+    for f in faces:
+        loops = b.getBodyTopos(egads.LOOP, ref=f)
+
+        for l in loops:
+            edges = b.getBodyTopos(egads.EDGE, ref=l)
+
+            print edges
+
+
 
     
