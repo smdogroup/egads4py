@@ -43,12 +43,11 @@ libs = ['TKBool', 'TKernel', 'TKFeat', 'TKBO', 'TKGeomAlgo',
         'TKXSBase', 'TKIGES', 'TKFillet', 'PTKernel', 'dl' ]
 
 exts = []
-mod = 'egads4py'
-sources = ['egads4py/egads4py.pyx']
+sources = ['egads4py/egads.pyx']
 sources.extend(glob('src/*.c'))
 sources.extend(glob('src/*.cpp'))
 
-exts.append(Ext('egads4py.%s'%(mod), sources=sources,
+exts.append(Ext('egads4py.egads', sources=sources,
                 include_dirs=inc_dirs, libraries=libs, 
                 library_dirs=lib_dirs, 
                 runtime_library_dirs=runtime_lib_dirs))
