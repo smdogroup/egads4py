@@ -10,7 +10,7 @@ from libc.string cimport const_char
 from libc.stdlib cimport malloc, free
 
 # Import the definitions
-from egads4py cimport *
+from egads cimport *
 
 # Class types
 NIL = EGADS_NIL
@@ -43,12 +43,12 @@ PLANE = EGADS_PLANE
 SPHERICAL = EGADS_SPHERICAL
 CYLINDRICAL = EGADS_CYLINDRICAL
 REVOLUTION = EGADS_REVOLUTION
-TORODIAL = EGADS_TOROIDAL
+TOROIDAL = EGADS_TOROIDAL
 CONICAL = EGADS_CONICAL
 EXTRUSION = EGADS_EXTRUSION
 
 # /* TOPOLOGY */
-SREVERSED = EGADS_SREVERSE
+SREVERSE = EGADS_SREVERSE
 NOMTYPE = EGADS_NOMTYPE
 SFORWARD = EGADS_SFORWARD
 ONENODE = EGADS_ONENODE
@@ -61,9 +61,97 @@ FACEBODY = EGADS_FACEBODY
 SHEETBODY = EGADS_SHEETBODY
 SOLIDBODY = EGADS_SOLIDBODY
 
+# Error codes
+EGADS_TESSTATE = _EGADS_TESSTATE
+EGADS_EXISTS = _EGADS_EXISTS
+EGADS_ATTRERR = _EGADS_ATTRERR
+EGADS_TOPOCNT = _EGADS_TOPOCNT
+EGADS_OCSEGFLT = _EGADS_OCSEGFLT
+EGADS_BADSCALE = _EGADS_BADSCALE
+EGADS_NOTORTHO = _EGADS_NOTORTHO
+EGADS_DEGEN = _EGADS_DEGEN
+EGADS_CONSTERR = _EGADS_CONSTERR
+EGADS_TOPOERR = _EGADS_TOPOERR
+EGADS_GEOMERR = _EGADS_GEOMERR
+EGADS_NOTBODY = _EGADS_NOTBODY
+EGADS_WRITERR = _EGADS_WRITERR
+EGADS_NOTMODEL = _EGADS_NOTMODEL
+EGADS_NOLOAD = _EGADS_NOLOAD
+EGADS_RANGERR = _EGADS_RANGERR
+EGADS_NOTGEOM = _EGADS_NOTGEOM
+EGADS_NOTTESS = _EGADS_NOTTESS
+EGADS_EMPTYERR = _EGADS_EMPTY
+EGADS_NOTTOPO = _EGADS_NOTTOPO
+EGADS_REFERCE = _EGADS_REFERCE
+EGADS_NOTXFORM = _EGADS_NOTXFORM
+EGADS_NOTCNTX = _EGADS_NOTCNTX
+EGADS_MIXCNTX = _EGADS_MIXCNTX
+EGADS_NODATA = _EGADS_NODATA
+EGADS_NONAME = _EGADS_NONAME
+EGADS_INDEXERR = _EGADS_INDEXERR
+EGADS_MALLOC = _EGADS_MALLOC
+EGADS_NOTOBJ = _EGADS_NOTOBJ
+EGADS_NULLOBJ = _EGADS_NULLOBJ
+EGADS_NOTFOUND = _EGADS_NOTFOUND
+EGADS_SUCCESS = _EGADS_SUCCESS
+EGADS_OUTSIDE = _EGADS_OUTSIDE
+
+# Create a dictionary
+oclass_types = {
+    NIL: [],
+    EMPTY: [],
+    REFERENCE: [],
+    PCURVE: [LINE, CIRCLE, ELLIPSE, PARABOLA, HYPERBOLA,
+             TRIMMED, BEZIER, BSPLINE, OFFSET],
+    CURVE: [LINE, CIRCLE, ELLIPSE, PARABOLA, HYPERBOLA,
+            TRIMMED, BEZIER, BSPLINE, OFFSET],
+    SURFACE: [PLANE, SPHERICAL, CYLINDRICAL, REVOLUTION,
+              TOROIDAL, CONICAL, EXTRUSION],
+    EDGE: [],
+    LOOP: [],
+    FACE: [],
+    SHELL: [],
+    BODY: [],
+    MODEL: []}
+
+egads_error_codes = {
+    EGADS_TESSTATE : "EGADS_TESSTATE",
+    EGADS_EXISTS : "EGADS_EXISTS",
+    EGADS_ATTRERR : "EGADS_ATTRERR",
+    EGADS_TOPOCNT : "EGADS_TOPOCNT",
+    EGADS_OCSEGFLT : "EGADS_OCSEGFLT",
+    EGADS_BADSCALE : "EGADS_BADSCALE",
+    EGADS_NOTORTHO : "EGADS_NOTORTHO",
+    EGADS_DEGEN : "EGADS_DEGEN",
+    EGADS_CONSTERR : "EGADS_CONSTERR",
+    EGADS_TOPOERR : "EGADS_TOPOERR",
+    EGADS_GEOMERR : "EGADS_GEOMERR",
+    EGADS_NOTBODY : "EGADS_NOTBODY",
+    EGADS_WRITERR : "EGADS_WRITERR",
+    EGADS_NOTMODEL : "EGADS_NOTMODEL",
+    EGADS_NOLOAD : "EGADS_NOLOAD",
+    EGADS_RANGERR : "EGADS_RANGERR",
+    EGADS_NOTGEOM : "EGADS_NOTGEOM",
+    EGADS_NOTTESS : "EGADS_NOTTESS",
+    EGADS_EMPTYERR : "EGADS_EMPTY",
+    EGADS_NOTTOPO : "EGADS_NOTTOPO",
+    EGADS_REFERCE : "EGADS_REFERCE",
+    EGADS_NOTXFORM : "EGADS_NOTXFORM",
+    EGADS_NOTCNTX : "EGADS_NOTCNTX",
+    EGADS_MIXCNTX : "EGADS_MIXCNTX",
+    EGADS_NODATA : "EGADS_NODATA",
+    EGADS_NONAME : "EGADS_NONAME",
+    EGADS_INDEXERR : "EGADS_INDEXERR",
+    EGADS_MALLOC : "EGADS_MALLOC",
+    EGADS_NOTOBJ : "EGADS_NOTOBJ",
+    EGADS_NULLOBJ : "EGADS_NULLOBJ",
+    EGADS_NOTFOUND : "EGADS_NOTFOUND",
+    EGADS_SUCCESS : "EGADS_SUCCESS",
+    EGADS_OUTSIDE : "EGADS_OUTSIDE" }
+
 def _checkErr(int stat):
     # TODO: More descriptive error messages
-    errmsg = 'An error occured with code %d'%(stat)
+    errmsg = 'Egads returned error code: %s'%(egads_error_codes[stat])
     raise RuntimeError(errmsg)
 
 def revision():
@@ -79,7 +167,7 @@ cdef class pyego:
     def __init__(self, pyego contxt=None):
         cdef int stat
         if contxt:
-            self.context = (<pyego>contxt).context
+            self.context = contxt.context
         else:
             stat = EG_open(&self.context)
             if stat:
@@ -91,7 +179,7 @@ cdef class pyego:
         if self.ptr:
             stat = EG_deleteObject(self.ptr)
             if stat:
-                self._checkErr(stat)
+                _checkErr(stat)
 
     def setOutLevel(self, int outlevel):
         cdef int stat
@@ -146,8 +234,8 @@ cdef class pyego:
         cdef int stat
         cdef int oclass
         cdef int mtype
-        cdef int *ivec
-        cdef double *rvec
+        cdef int *ivec = NULL
+        cdef double *rvec = NULL
         cdef ego refgeo
         stat = EG_getGeometry(self.ptr, &oclass, &mtype, &refgeo, 
                               &ivec, &rvec)
@@ -155,15 +243,61 @@ cdef class pyego:
             _checkErr(stat)
         return oclass, mtype
 
-    def makeGeometry(self, int oclass, int mtype, pyego refgeo, 
-                     np.ndarray[int, ndim=1, mode='c'] ivec,
-                     np.ndarray[double, ndim=1, mode='c'] rvec):
+    def makeGeometry(self, int oclass, int mtype,
+                     idata=None, rdata=None,                   
+                     pyego refgeo=None):
         cdef int stat
-        stat = EG_makeGeometry(self.context, oclass, mtype, refgeo.ptr,
-                               <int*>ivec.data, <double*>rvec.data, 
-                               &self.ptr)
+        cdef ego rgeo = NULL
+        cdef int *iptr = NULL
+        cdef double *rptr = NULL
+        if self.ptr:
+            stat = EG_deleteObject(self.ptr)
+            if stat:
+                _checkErr(stat)
+        if not (oclass == CURVE or oclass == PCURVE or oclass == SURFACE):
+            errmsg = 'makeGeometry only accepts CURVE, PCURVE or SURFACE'
+            raise ValueError(errmsg)
+        if refgeo is not None:
+            rgeo = refgeo.ptr
+        ivec, rvec = [], []
+        try:
+            if idata is not None:
+                for item in idata:
+                    if isinstance(item, int):
+                        ivec.append(item)
+                    else:
+                        ivec.extend(item)
+        except:
+            errmsg = 'Failed to convert integer data'
+            raise ValueError(errmsg)
+
+        try:
+            if rdata is not None:
+                for item in rdata:
+                    if isinstance(item, (int, float)):
+                        rvec.append(item)
+                    else:
+                        rvec.extend(item)
+        except:
+            errmsg = 'Failed to convert real data'
+            raise ValueError(errmsg)
+
+        if len(ivec) > 0:
+            iptr = <int*>malloc(len(ivec)*sizeof(int))
+            for i in range(len(ivec)):
+                iptr[i] = ivec[i]
+        if len(rvec) > 0:
+            rptr = <double*>malloc(len(rvec)*sizeof(double))
+            for i in range(len(rvec)):
+                rptr[i] = rvec[i]       
+        stat = EG_makeGeometry(self.context, oclass, mtype, rgeo,
+                               iptr, rptr, &self.ptr)
         if stat:
             _checkErr(stat)
+        if len(ivec) > 0:
+            free(iptr)
+        if len(rvec) > 0:
+            free(rptr)
         return
 
     def getRange(self):
@@ -186,8 +320,36 @@ cdef class pyego:
             return [r[0], r[1], r[2], r[3]], periodic
         return None
 
-    # int  EG_evaluate( const ego geom, const double *param, 
-    #                            double *results )
+    def evaluate(self, p):
+        cdef int stat
+        cdef double param[2]
+        cdef double r[18]
+        try:
+            if isinstance(p, (int, float)):
+                param[0] = p
+            else:
+                param[0] = p[0]
+                param[1] = p[1]
+        except:
+            errmsg = 'Failed to convert parameter value'
+            raise ValueError(errmsg)
+        stat = EG_evaluate(self.ptr, param, r)
+        if stat:
+            _checkErr(stat)
+        if self.ptr.oclass == EGADS_PCURVE:
+            return [r[0], r[1]], [r[2], r[3]], [r[4], r[5]]
+        elif (self.ptr.oclass == EGADS_EDGE or
+              self.ptr.oclass == EGADS_CURVE):
+            return [r[0], r[1], r[2]], [r[3], r[4], r[5]], [r[6], r[7], r[8]]
+        elif (self.ptr.oclass == EGADS_FACE or
+              self.ptr.oclass == EGADS_SURFACE):
+            return [r[0], r[1], r[2]], \
+                   [r[3], r[4], r[5], r[6], r[7], r[8]], \
+                   [r[9], r[10], r[11],
+                    r[12], r[13], r[14],
+                    r[15], r[16], r[17]]
+        return None
+
     # int  EG_invEvaluate( const ego geom, double *xyz, double *param,
     #                               double *results )
     # int  EG_invEvaluateGuess( const ego geom, double *xyz, 
@@ -214,13 +376,100 @@ cdef class pyego:
         if stat:
             _checkErr(stat)
 
-    # int  EG_getTopology( const ego topo, ego *geom, int *oclass, 
-    #                               int *type, double *limits, 
-    #                               int *nChildren, ego **children, int **sense )
-    # int  EG_makeTopology( ego context, ego geom, int oclass,
-    #                                int mtype, double *limits,
-    #                                int nChildren, ego *children,
-    #                                int *senses, ego *topo )
+    def getTopology(self):
+        cdef int stat
+        cdef ego geom = NULL
+        cdef int oclass
+        cdef int mtype
+        cdef double limits[4]
+        cdef int nchildren
+        cdef ego *children
+        cdef int *senses
+        stat = EG_getTopology(self.ptr, &geom, &oclass, &mtype,
+                              limits, &nchildren, &children, &senses)
+        if stat:
+            _checkErr(stat)
+        childlst = []
+        for i in range(nchildren):
+            c = pyego(self)
+            c.ptr = children[i]
+            childlst.append(c)
+
+        sens = None
+        if oclass == LOOP or oclass == SHELL:
+            sens = []
+            for i in range(nchildren):
+                sens.append(senses[i])
+        lim = []
+        if oclass == NODE:
+            lim = [limits[0], limits[1], limits[2]]
+        elif oclass == EDGE:
+            lim = [limits[0], limits[1]]
+        elif oclass == FACE:
+            lim = [limits[0], limits[1], limits[2], limits[3]]
+        geo = pyego(self)
+        geo.ptr = geom
+        return geo, oclass, mtype, lim, childlst, sens
+
+    def makeTopology(self, int oclass, int mtype,
+                     lims, childlst, sens):
+        cdef int stat
+        cdef double limits[4]
+        cdef int nchildren = 0
+        cdef ego *chilren = NULL
+        cdef int *senses = NULL
+        errmsg = None
+        if oclass == EDGE:
+            if mtype != TWONODE and mtype != ONENODE and mtype != CLOSED:
+                errmsg = 'EDGE must be TWONODE, ONENODE or CLOSED'
+        elif oclass == LOOP:
+            if mtype != OPEN and mtype != CLOSED:
+                errmsg = 'LOOP must be OPEN or CLOSED'
+        elif oclass == FACE:
+            if mtype != SFORWARD and mtype != SREVERSE:
+                errmsg = 'FACE must be SFORWARD or SREVERSE'
+        elif oclass == SHELL:
+            if mtype != OPEN and mtype != CLOSED:
+                errmsg = 'SHELL must be OPEN or CLOSED'
+        elif oclass == BODY:
+            if (mtype != WIREBODY and mtype != FACEBODY and
+                mtype != SHEETBODY and mtype != SOLIDBODY):
+                errmsg = 'BODY must be WIREBODY, FACEBODY, SHEETBODY or SOLIDBODY'
+        if errmsg is not None:
+            raise ValueError(errmsg)
+        
+        if (oclass == FACE or oclass == LOOP) and len(childlst) != len(sens):
+            raise ValueError('Children and senses list must be of equal length')
+        
+        if oclass == EDGE:
+            limits[0] = lims[0]
+            limits[1] = lims[1]
+        elif oclass == FACE:
+            limits[0] = lims[0]
+            limits[1] = lims[1]
+            limits[2] = lims[2]
+            limits[3] = lims[3]
+
+        nchildren = len(childlst)
+        children = <ego*>malloc(nchildren*sizeof(ego))
+        for i in range(nchildren):
+            children[i] = (<pyego>childlst[i]).ptr
+
+        if oclass == SHELL or oclass == LOOP:
+            senses = <int*>malloc(nchildren*sizeof(int))
+            for i in range(nchildren):
+                senses[i] = sens[i]        
+            
+        new = pyego(self)
+        stat = EG_makeTopology(self.context, self.ptr, oclass, mtype,
+                               limits, nchildren, children,
+                               senses, &new.ptr)
+        if stat:
+            _checkErr(stat)
+        free(children)
+        free(senses)
+        return new
+
 
     def makeLoop(self, list edges, pyego geom, double toler):
         cdef int stat 
@@ -249,8 +498,27 @@ cdef class pyego:
             _checkErr(stat)
         return new
 
-    # int  EG_getBodyTopos( const ego body, ego src,
-    #                                int oclass, int *ntopo, ego **topos )
+    def getBodyTopos(self, int oclass, pyego ref=None):
+        cdef int stat
+        cdef ego src = NULL
+        cdef int ntopos = 0
+        cdef ego *topos = NULL
+        if ref is not None:
+            src = ref.ptr
+        if not (oclass == NODE or oclass == EDGE or oclass == LOOP or
+                oclass == FACE or oclass == SHELL):
+            errmsg = 'Object must be either NODE, EDGE, LOOP, FACE or SHELL'
+            raise ValueError(errmsg)
+        stat = EG_getBodyTopos(self.ptr, src, oclass, &ntopos, &topos)
+        if stat:
+            _checkErr(stat)
+        tlist = []
+        for i in range(ntopos):
+            t = pyego(self)
+            t.ptr = topos[i]
+            tlist.append(t)
+        free(topos)
+        return tlist
 
     def solidBoolean(self, pyego tool, int oper):
         cdef int stat
