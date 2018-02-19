@@ -186,21 +186,19 @@ cdef class pyego:
             return [r[0], r[1], r[2], r[3]], periodic
         return None
 
-    # def evaluate(self, np.ndarray[double, ndim=1, mode='c'] pt):
-    #     cdef double result[3]
-    #     stat = EG_evaluate(self.ptr, <double*>pt.data, result)
-
+    # int  EG_evaluate( const ego geom, const double *param, 
+    #                            double *results )
     # int  EG_invEvaluate( const ego geom, double *xyz, double *param,
-    #                       double *results )
+    #                               double *results )
     # int  EG_invEvaluateGuess( const ego geom, double *xyz, 
-    #                           double *param, double *results )
+    #                                    double *param, double *results )
     # int  EG_arcLength( const ego geom, double t1, double t2,
-    #                    double *alen )
+    #                             double *alen )
     # int  EG_curvature( const ego geom, const double *param, 
-    #                    double *results )
+    #                             double *results )
     # int  EG_approximate( ego context, int maxdeg, double tol,
-    #                      const int *sizes, const double *xyzs,
-    #                      ego *bspline )
+    #                               const int *sizes, const double *xyzs,
+    #                               ego *bspline )
 
     def getTolerance(self):
         cdef int stat
@@ -216,24 +214,9 @@ cdef class pyego:
         if stat:
             _checkErr(stat)
 
-    # def getTopology(self):
-    #     cdef int stat
-    #     cdef ego geom
-    #     cdef int oclass
-    #     cdef int otype
-    #     double limits[4]
-    #     cdef int nchild
-    #     cdef ego **nchild
-    #     stat = EG_getTopology(self.ptr, &geom, &oclass, &otype, limits,
-    #                           &nchild, &children, &sense)
-    #     return geom, oclass, otype, limits, nchild, children, sense
     # int  EG_getTopology( const ego topo, ego *geom, int *oclass, 
     #                               int *type, double *limits, 
     #                               int *nChildren, ego **children, int **sense )
-
-    # def makeTopology(self, pyego geom, int oclass, int otype,
-    #                  limits, list children, list sense):
-
     # int  EG_makeTopology( ego context, ego geom, int oclass,
     #                                int mtype, double *limits,
     #                                int nChildren, ego *children,
@@ -386,9 +369,6 @@ cdef class pyego:
             _checkErr(stat)
         return
 
-
-
-
     # Set/retrieve attributes
     # int  EG_attributeAdd( ego obj, const char *name, int type, int len,
     #                       const int    *ints, 
@@ -408,26 +388,6 @@ cdef class pyego:
     # int  EG_attributeDup( const ego src, ego dst )
 
 
-    # int  EG_getGeometry( const ego geom, int *oclass, int *mtype,
-    #                               ego *refGeom, int **ivec, double **rvec )
-    # int  EG_makeGeometry( ego context, int oclass, int mtype,
-    #                               ego refGeom,
-    #                               const int *ivec, 
-    #                               const double *rvec, ego *geom )
-    # int  EG_getRange( const ego geom, double *range, int *periodic )
-    # int  EG_evaluate( const ego geom, const double *param, 
-    #                            double *results )
-    # int  EG_invEvaluate( const ego geom, double *xyz, double *param,
-    #                               double *results )
-    # int  EG_invEvaluateGuess( const ego geom, double *xyz, 
-    #                                    double *param, double *results )
-    # int  EG_arcLength( const ego geom, double t1, double t2,
-    #                             double *alen )
-    # int  EG_curvature( const ego geom, const double *param, 
-    #                             double *results )
-    # int  EG_approximate( ego context, int maxdeg, double tol,
-    #                               const int *sizes, const double *xyzs,
-    #                               ego *bspline )
     # int  EG_fitTriangles( ego context, int npts, double *xyzs,
     #                                int ntris, const int *tris,
     #                                const int *tric, double tol,
