@@ -493,7 +493,7 @@ cdef class pyego:
         if errmsg is not None:
             raise ValueError(errmsg)
         
-        if ((oclass == SHELL or oclass == LOOP) and
+        if ((oclass == FACE or oclass == LOOP) and
             len(children) != len(sens)):
             errmsg = 'Children and senses list must be of equal length'
             raise ValueError(errmsg)
@@ -635,24 +635,38 @@ cdef class pyego:
 
     def intersection(self, pyego tool):
         cdef int stat
-        cdef int nedge
+        cdef int nobj
+        cdef ego *faceEdgePairs = NULL
         new = pyego(self)
-        stat = EG_intersection(self.ptr, tool.ptr, &nedge, NULL, &new.ptr)
-        if stat:
+        stat = EG_intersection(self.ptr, tool.ptr, &nobj, &faceEdgePairs, 
+                               &new.ptr)
+        if stat == EGADS_CONSTERR:
+            return None, None
+        elif stat:
             _checkErr(stat)
-        return new
+        pairs = []
+        for i in range(nobj):
+            f = pyego(self)
+            f.ptr = faceEdgePairs[2*i]
+            pairs.append(f)
+            e = pyego(self)
+            e.ptr = faceEdgePairs[2*i+1]
+            pairs.append(e)
+        if faceEdgePairs:
+            free(faceEdgePairs)
+        return new, pairs 
 
-    def imprintBody(self, list edges):
+    def imprintBody(self, list pairs):
         cdef int stat
-        cdef nedges = 0
-        cdef ego* edgs = NULL
-        nedges = len(edges) 
-        edgs = <ego*>malloc(nedges*sizeof(ego))
-        for i in range(nedges):
-            edgs[i] = (<pyego>edges[i]).ptr
+        cdef nobj = 0
+        cdef ego* objs = NULL
+        nobj = len(pairs) 
+        objs = <ego*>malloc(nobj*sizeof(ego))
+        for i in range(nobj):
+            objs[i] = (<pyego>pairs[i]).ptr
         new = pyego(self)
-        stat = EG_imprintBody(self.ptr, nedges, edgs, &new.ptr)
-        free(edgs)
+        stat = EG_imprintBody(self.ptr, nobj/2, objs, &new.ptr)
+        free(objs)
         if stat:
             _checkErr(stat)
         return new
