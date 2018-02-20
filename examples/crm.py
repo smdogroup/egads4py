@@ -1,4 +1,5 @@
 import numpy as np
+
 from egads4py import egads
 
 crm = egads.pyego()
@@ -7,21 +8,6 @@ crm.loadModel('final_surface.igs')
 
 # Get the 'bodies' from the model
 geo, oclass, mtype, lim, bodies, sense = crm.getTopology()
-
-# # Create the faces
-# iges_list = []
-# for body in bodies:
-#     faces = body.getBodyTopos(egads.FACE)
-#     for f in faces:
-#         iges_list.append(f)
-
-# # Sew everything together into the oml model
-# oml = crm.sewFaces(iges_list, toler=1e-5)
-
-# # Get the bodies
-# geo, oclass, mtype, limits, oml_bodies, sense = oml.getTopology()
-
-# oml_bodies = bodies
 
 # Create the nodes
 n1 = np.array([700, 0, -25], dtype=np.float)
@@ -84,20 +70,21 @@ face = plane.makeTopology(egads.FACE, egads.SFORWARD,
 face_list = []
 for body in bodies:
     result, pairs = body.intersection(face)
-    print body.getInfoStr()
+
     if result is not None:
-        f = body.imprintBody(pairs)
+        # Imprint the wire body onto the face
+        body = body.imprintBody(pairs)
+
+    # Get all the faces from the body
+    faces = body.getBodyTopos(egads.FACE)
+    for f in faces:
         face_list.append(f)
-        print f.getInfoStr()
 
-# Add
-
-shell = crm.makeTopology(egads.SHELL, egads.OPEN, children=face_list, 
-                         refgeo=False)
-
-model = result.makeTopology(egads.MODEL, egads.FACEBODY, 
-                            children=[shell], refgeo=False)
-print model.getInfoStr()
+# Sew the bodies back together
+print 'Sewing faces together'
+print 'len(face_list) = ', len(face_list)
+oml = crm.sewFaces(face_list, toler=1e-5, flag=1)
 
 fname = 'test-surface-model.step'
-model.saveModel(fname)
+
+oml.saveModel(fname)

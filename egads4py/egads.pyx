@@ -552,11 +552,24 @@ cdef class pyego:
             _checkErr(stat)
         return new
 
-    def makeFace(self, pyego obj, int mtype, 
-                 np.ndarray[double, ndim=1, mode='c'] limits):
+    def makeFace(self, pyego obj, int mtype, rdata=None):
         cdef int stat
+        cdef double data[4]
+        cdef double *ptr = NULL
+        if obj.ptr.oclass == SURFACE:
+            # Limits of the surface
+            data[0] = rdata[0]
+            data[1] = rdata[1]
+            data[2] = rdata[2]
+            data[3] = rdata[3]
+            ptr = data
+        elif obj.ptr.oclass == FACE:
+            data[0] = rdata[0]
+            data[1] = rdata[1]
+            ptr = data
+
         new = pyego(self)
-        stat = EG_makeFace(obj.ptr, mtype, <double*>limits.data, &new.ptr)
+        stat = EG_makeFace(obj.ptr, mtype, ptr, &new.ptr)
         if stat:
             _checkErr(stat)
         return new
