@@ -184,7 +184,7 @@ cdef extern from "egads.h":
     #                       ego *bspline )
     # int  EG_otherCurve( const ego surface, const ego curve,
     #                     double tol, ego *newcurve )
-    # int  EG_isSame( const ego geom1, const ego geom2 )
+    int  EG_isSame( const ego geom1, const ego geom2 )
     # int  EG_isoCline( const ego surface, int UV, double val,
     #                   ego *newcurve )
     # int  EG_convertToBSpline( ego geom, ego *bspline )

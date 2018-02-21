@@ -279,6 +279,8 @@ cdef class context:
                                iptr, rptr, &new.ptr)
         if stat:
             _checkErr(stat)
+        if geom is not None:
+            new.refs.append(geom)
         if len(ivec) > 0:
             free(iptr)
         if len(rvec) > 0:
@@ -352,12 +354,16 @@ cdef class context:
                                senses, &new.ptr)
         if stat:
             _checkErr(stat)
+        if children is not None:
+            new.refs.extend(children)
+        if geom is not None:
+            new.refs.append(geom)
         free(childarray)
         free(senses)
         return new
 
     def makeLoop(self, list edges, pyego geom=None, double toler=0.0):
-        cdef int stat 
+        cdef int nloop_edges = 0 
         cdef int nedges
         cdef ego *edgs = NULL
         cdef ego geoptr = NULL
@@ -371,14 +377,13 @@ cdef class context:
             else:
                 edgs[i] = (<pyego>edges[i]).ptr
         new = pyego(self)
-        stat = EG_makeLoop(nedges, edgs, geoptr, toler, &new.ptr)
-        if stat:
-            _checkErr(stat)
+        nloop_edges = EG_makeLoop(nedges, edgs, geoptr, toler, &new.ptr)
+        new.refs.extend(edges)
         for i in range(nedges):
             if edgs[i] == NULL:
                 edges[i] = None
         free(edgs)
-        return new
+        return new, nloop_edges
 
     def makeFace(self, pyego obj, int mtype, rdata=None):
         cdef int stat
@@ -398,6 +403,7 @@ cdef class context:
 
         new = pyego(self)
         stat = EG_makeFace(obj.ptr, mtype, ptr, &new.ptr)
+        new.refs.append(obj)
         if stat:
             _checkErr(stat)
         return new
@@ -445,6 +451,7 @@ cdef class context:
             if stat:
                 _checkErr(stat)
             free(objs)
+            new.refs.extend(objlist)
         return new
 
     def loadModel(self, str filename, int bflag=1):
@@ -458,16 +465,25 @@ cdef class context:
 cdef class pyego:
     cdef ego ptr
     cdef context ctx
+    cdef list refs
     
-    def __init__(self, context ctx):
+    def __cinit__(self, context ctx):
         self.ctx = ctx
         self.ptr = NULL
+        self.refs = []
 
     def __dealloc__(self):
         # if self.ptr:
         #     EG_deleteObject(self.ptr)
         pass
-    
+
+    def isSame(self, pyego obj):
+        cdef int stat = 0
+        stat = EG_isSame(self.ptr, obj.ptr)
+        if stat:
+            return True
+        return False
+
     def getInfo(self):
         cdef int stat
         cdef int oclass

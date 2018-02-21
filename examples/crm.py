@@ -1,5 +1,5 @@
 import numpy as np
-
+import os
 from egads4py import egads
 
 ctx = egads.context()
@@ -9,59 +9,63 @@ crm = ctx.loadModel('final_surface.igs')
 # Get the 'bodies' from the model
 geo, oclass, mtype, lim, bodies, sense = crm.getTopology()
 
+# Set the top and the bottom surfaces
+zc = -50
+x0 = [635.000, 30.057, zc]
+x1 = [769.620, 30.057, zc]
+x2 = [635.000, 55.033, zc]
+x3 = [769.620, 55.033, zc]
+x4 = [680.000, 80.010, zc]
+x5 = [769.620, 80.010, zc]
+
+X = np.array([x0, x1, x2, x3, x4, x5])
+frame_edges = [[0, 1], [2, 3], [4, 5], 
+               [0, 2], [1, 3], [2, 4], [3, 5]]
+frame_loops = [[0, 3, 1, 4], 
+               [1, 2, 3, 6]]
+
 # Create the nodes
-n1 = np.array([700, 0, -25], dtype=np.float)
-n2 = np.array([1200, 700, -25], dtype=np.float)
-n3 = np.array([1200, 700, 200], dtype=np.float)
-n4 = np.array([700, 0, 200], dtype=np.float)
+nodes = []
+for i in range(len(X)):
+    oclass = egads.NODE
+    node = ctx.makeTopology(oclass, rdata=X[i])
+    nodes.append(node)
 
-oclass = egads.NODE
-node1 = ctx.makeTopology(oclass, rdata=n1)
-node2 = ctx.makeTopology(oclass, rdata=n2)
-node3 = ctx.makeTopology(oclass, rdata=n3)
-node4 = ctx.makeTopology(oclass, rdata=n4)
+# Create the lines/edges
+edges = []
+for e in frame_edges:
+    d = X[e[1]] - X[e[0]] 
+    oclass = egads.CURVE
+    mtype = egads.LINE
+    line = ctx.makeGeometry(oclass, mtype, rdata=[X[e[0]], d])
 
-# Make the lines between the edges
-oclass = egads.CURVE
-mtype = egads.LINE
-topo_class = egads.EDGE
-topo_type = egads.TWONODE
+    topo_class = egads.EDGE
+    topo_type = egads.TWONODE
+    edge = ctx.makeTopology(topo_class, topo_type, geom=line,
+                            children=[nodes[e[0]], nodes[e[1]]],
+                            rdata=[0, np.sqrt(np.dot(d, d))])
+    edges.append(edge)
 
-d1 = n2 - n1 
-l1 = ctx.makeGeometry(oclass, mtype, rdata=[n1, d1])
-e1 = ctx.makeTopology(topo_class, topo_type, geom=l1,
-                      children=[node1, node2],
-                      rdata=[0, np.sqrt(np.dot(d1, d1))])
+# Create a series of loop
+loop, nedges = ctx.makeLoop(edges)
 
-d2 = n3 - n2 
-l2 = ctx.makeGeometry(oclass, mtype, rdata=[n2, d2])
-e2 = ctx.makeTopology(topo_class, topo_type, geom=l2,
-                      children=[node2, node3],
-                      rdata=[0, np.sqrt(np.dot(d2, d2))])
+# Create a wire body
+topo_class = egads.BODY
+topo_type = egads.WIREBODY
+wbody = ctx.makeTopology(topo_class, topo_type, children=[loop])
 
-d3 = n4 - n3
-l3 = ctx.makeGeometry(oclass, mtype, rdata=[n3, d3])
-e3 = ctx.makeTopology(topo_class, topo_type, geom=l3,
-                      children=[node3, node4],
-                      rdata=[0, np.sqrt(np.dot(d3, d3))])
+# Create the extruded body
+dist = 250.0
+direction = [0, 0, 1]
+extruded = wbody.extrude(dist, direction)
 
-d4 = n1 - n4
-l4 = ctx.makeGeometry(oclass, mtype, rdata=[n4, d4])
-e4 = ctx.makeTopology(topo_class, topo_type, geom=l4,
-                      children=[node4, node1],
-                      rdata=[0, np.sqrt(np.dot(d4, d4))])
-
-edges = [e1, e2, e3, e4]
-loop = ctx.makeLoop(edges)
-mtype = egads.SREVERSE
-if loop.getArea() > 0.0:
-    mtype = egads.SFORWARD
-face = ctx.makeFace(loop, mtype=mtype)
+model = ctx.makeTopology(egads.MODEL, children=[extruded])
+model.saveModel('extruded-model.step')
 
 # Perform the intersection
 face_list = []
 for body in bodies:
-    result, pairs = body.intersection(face)
+    result, pairs = body.intersection(extruded)
 
     if result is not None:
         # Imprint the wire body onto the face
@@ -78,5 +82,6 @@ print 'len(face_list) = ', len(face_list)
 oml = ctx.sewFaces(face_list, toler=1e-5, manifold=False)
 
 fname = 'test-surface-model.step'
+os.system('rm %s'%(fname))
 
 oml.saveModel(fname)
