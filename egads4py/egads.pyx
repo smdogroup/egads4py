@@ -199,57 +199,25 @@ def revision():
     EG_revision(&major, &minor, &occrev)
     return major, minor, occrev
 
-cdef class pyego:
+cdef class context:
     cdef ego context
-    cdef ego ptr
 
-    def __init__(self, pyego contxt=None):
+    def __init__(self):
         cdef int stat
-        if contxt:
-            self.context = contxt.context
-        else:
-            stat = EG_open(&self.context)
-            if stat:
-                _checkErr(stat)
-        self.ptr = NULL
+        stat = EG_open(&self.context)
+        if stat:
+            _checkErr(stat)
+        return
 
     def __dealloc__(self):
-        # if self.ptr:
-        #     EG_deleteObject(self.ptr)
-        pass
-
+        cdef int stat
+        stat = EG_close(self.context)
+        if stat:
+            _checkErr(stat)
+        return
+    
     def setOutLevel(self, int outlevel):
         EG_setOutLevel(self.context, outlevel)
-
-    def getInfo(self):
-        cdef int stat
-        cdef int oclass
-        cdef int mtype
-        cdef ego topObj
-        cdef ego prev
-        cdef ego next
-        stat = EG_getInfo(self.ptr, &oclass, &mtype, &topObj, &prev, &next)
-        if stat:
-            _checkErr(stat)
-        return oclass, mtype
-
-    def getInfoStr(self):
-        oclass, mtype = self.getInfo()
-        return oclass_str[oclass]
-        
-    def loadModel(self, str filename, int bflag=1):
-        cdef int stat
-        if self.ptr:
-            EG_deleteObject(self.ptr)
-        stat = EG_loadModel(self.context, bflag, filename, &self.ptr)
-        if stat:
-            _checkErr(stat)
-
-    def saveModel(self, str filename):
-        cdef int stat
-        stat = EG_saveModel(self.ptr, filename)
-        if stat:
-            _checkErr(stat)
 
     def makeTransform(self, xform):
         cdef int stat
@@ -261,59 +229,20 @@ cdef class pyego:
         if stat:
             _checkErr(stat)
 
-    def getTransform(self):
-        cdef int stat
-        cdef double T[12]
-        stat = EG_getTransformation(self.ptr, T)
-        xform = []
-        for i in range(12):
-            xform.append(T[i])
-        if stat:
-            _checkErr(stat)
-        return xform
-
-    def copy(self):
-        cdef int stat
-        new = pyego(self)
-        stat = EG_copyObject(self.ptr, NULL, &new.ptr)
-        if stat:
-            _checkErr(stat)
-
-    def flip(self):
-        cdef int stat
-        flip = pyego(self)
-        stat = EG_flipObject(self.ptr, &flip.ptr)
-        if stat:
-            _checkErr(stat)
-
-    def getGeometry(self):
-        cdef int stat
-        cdef int oclass
-        cdef int mtype
-        cdef int *ivec = NULL
-        cdef double *rvec = NULL
-        cdef ego refgeo
-        stat = EG_getGeometry(self.ptr, &oclass, &mtype, &refgeo, 
-                              &ivec, &rvec)
-        if stat:
-            _checkErr(stat)
-        return oclass, mtype
-
     def makeGeometry(self, int oclass, int mtype,
-                     idata=None, rdata=None, pyego refgeo=None):
+                     pyego geom=None, idata=None, rdata=None):
         cdef int stat
-        cdef ego rgeo = NULL
+        cdef ego refptr = NULL
         cdef int *iptr = NULL
         cdef double *rptr = NULL
-        if self.ptr:
-            stat = EG_deleteObject(self.ptr)
-            if stat:
-                _checkErr(stat)
+
+        if geom is not None:
+            refptr = geom.ptr
+
         if not (oclass == CURVE or oclass == PCURVE or oclass == SURFACE):
             errmsg = 'makeGeometry only accepts CURVE, PCURVE or SURFACE'
             raise ValueError(errmsg)
-        if refgeo is not None:
-            rgeo = refgeo.ptr
+
         ivec, rvec = [], []
         try:
             if idata is not None:
@@ -344,16 +273,260 @@ cdef class pyego:
         if len(rvec) > 0:
             rptr = <double*>malloc(len(rvec)*sizeof(double))
             for i in range(len(rvec)):
-                rptr[i] = rvec[i]       
-        stat = EG_makeGeometry(self.context, oclass, mtype, rgeo,
-                               iptr, rptr, &self.ptr)
+                rptr[i] = rvec[i]
+        new = pyego(self)
+        stat = EG_makeGeometry(self.context, oclass, mtype, refptr,
+                               iptr, rptr, &new.ptr)
         if stat:
             _checkErr(stat)
         if len(ivec) > 0:
             free(iptr)
         if len(rvec) > 0:
             free(rptr)
-        return
+        return new
+
+    def makeTopology(self, int oclass, int mtype=0, pyego geom=None,
+                     children=None, sens=None, rdata=None):
+        cdef int stat
+        cdef ego refptr = NULL
+        cdef double data[4]
+        cdef int nchildren = 0
+        cdef ego *childarray = NULL
+        cdef int *senses = NULL
+        errmsg = None
+        if oclass == EDGE:
+            if mtype != TWONODE and mtype != ONENODE and mtype != CLOSED:
+                errmsg = 'EDGE must be TWONODE, ONENODE or CLOSED'
+        elif oclass == LOOP:
+            if mtype != OPEN and mtype != CLOSED:
+                errmsg = 'LOOP must be OPEN or CLOSED'
+        elif oclass == FACE:
+            if mtype != SFORWARD and mtype != SREVERSE:
+                errmsg = 'FACE must be SFORWARD or SREVERSE'
+        elif oclass == SHELL:
+            if mtype != OPEN and mtype != CLOSED:
+                errmsg = 'SHELL must be OPEN or CLOSED'
+        elif oclass == BODY:
+            if (mtype != WIREBODY and mtype != FACEBODY and
+                mtype != SHEETBODY and mtype != SOLIDBODY):
+                errmsg = 'BODY must be WIREBODY, FACEBODY'
+                errmsg += ', SHEETBODY or SOLIDBODY'
+        if errmsg is not None:
+            raise ValueError(errmsg)
+        
+        if ((oclass == FACE or oclass == LOOP) and
+            len(children) != len(sens)):
+            errmsg = 'Children and senses list must be of equal length'
+            raise ValueError(errmsg)
+
+        if oclass == NODE:
+            data[0] = rdata[0]
+            data[1] = rdata[1]
+            data[2] = rdata[2]
+        elif oclass == EDGE:
+            data[0] = rdata[0]
+            data[1] = rdata[1]
+        elif oclass == FACE:
+            data[0] = rdata[0]
+            data[1] = rdata[1]
+            data[2] = rdata[2]
+            data[3] = rdata[3]
+
+        if children is not None:
+            nchildren = len(children)
+            childarray = <ego*>malloc(nchildren*sizeof(ego))
+            for i in range(nchildren):
+                childarray[i] = (<pyego>children[i]).ptr
+
+        if oclass == FACE or oclass == LOOP:
+            senses = <int*>malloc(nchildren*sizeof(int))
+            for i in range(nchildren):
+                senses[i] = sens[i]
+
+        if geom is not None:
+            refptr = geom.ptr
+            
+        new = pyego(self)
+        stat = EG_makeTopology(self.context, refptr, oclass, mtype,
+                               data, nchildren, childarray,
+                               senses, &new.ptr)
+        if stat:
+            _checkErr(stat)
+        free(childarray)
+        free(senses)
+        return new
+
+    def makeLoop(self, list edges, pyego geom=None, double toler=0.0):
+        cdef int stat 
+        cdef int nedges
+        cdef ego *edgs = NULL
+        cdef ego geoptr = NULL
+        if geom is not None:
+            geoptr = geom.ptr
+        nedges = len(edges)
+        edgs = <ego*>malloc(nedges*sizeof(ego))
+        for i in range(nedges):
+            if edges[i] is None:
+                edgs[i] = NULL
+            else:
+                edgs[i] = (<pyego>edges[i]).ptr
+        new = pyego(self)
+        stat = EG_makeLoop(nedges, edgs, geoptr, toler, &new.ptr)
+        if stat:
+            _checkErr(stat)
+        for i in range(nedges):
+            if edgs[i] == NULL:
+                edges[i] = None
+        free(edgs)
+        return new
+
+    def makeFace(self, pyego obj, int mtype, rdata=None):
+        cdef int stat
+        cdef double data[4]
+        cdef double *ptr = NULL
+        if obj.ptr.oclass == SURFACE:
+            # Limits of the surface
+            data[0] = rdata[0]
+            data[1] = rdata[1]
+            data[2] = rdata[2]
+            data[3] = rdata[3]
+            ptr = data
+        elif obj.ptr.oclass == FACE:
+            data[0] = rdata[0]
+            data[1] = rdata[1]
+            ptr = data
+
+        new = pyego(self)
+        stat = EG_makeFace(obj.ptr, mtype, ptr, &new.ptr)
+        if stat:
+            _checkErr(stat)
+        return new
+
+    def makeSolidBody(self, int stype, rdata=None):
+        cdef int stat
+        cdef double *rptr = NULL
+        rvec = []
+        try:
+            if rdata is not None:
+                for item in rdata:
+                    if isinstance(item, (int, float)):
+                        rvec.append(item)
+                    else:
+                        rvec.extend(item)
+        except:
+            errmsg = 'Failed to convert real data'
+            raise ValueError(errmsg)
+        
+        if len(rvec) > 0:
+            rptr = <double*>malloc(len(rvec)*sizeof(double))
+            for i in range(len(rvec)):
+                rptr[i] = rvec[i]
+
+        body = pyego(self)
+        stat = EG_makeSolidBody(self.context, stype, rptr, &body.ptr)
+        if rptr:
+            free(rptr)
+        return body
+
+    def sewFaces(self, list objlist, double toler=0.0, manifold=True):
+        cdef int nobj
+        cdef ego *objs
+        cdef int flag = 1
+        if manifold:
+            flag = 0
+
+        if len(objlist) > 0:
+            nobj = len(objlist)
+            objs = <ego*>malloc(nobj*sizeof(ego))
+            for i in range(nobj):
+                objs[i] = (<pyego>objlist[i]).ptr
+            new = pyego(self)
+            stat = EG_sewFaces(nobj, objs, toler, flag, &new.ptr)
+            if stat:
+                _checkErr(stat)
+            free(objs)
+        return new
+
+    def loadModel(self, str filename, int bflag=1):
+        cdef int stat
+        new = pyego(self)
+        stat = EG_loadModel(self.context, bflag, filename, &new.ptr)
+        if stat:
+            _checkErr(stat)
+        return new
+
+cdef class pyego:
+    cdef ego ptr
+    cdef context ctx
+    
+    def __init__(self, context ctx):
+        self.ctx = ctx
+        self.ptr = NULL
+
+    def __dealloc__(self):
+        # if self.ptr:
+        #     EG_deleteObject(self.ptr)
+        pass
+    
+    def getInfo(self):
+        cdef int stat
+        cdef int oclass
+        cdef int mtype
+        cdef ego topObj
+        cdef ego prev
+        cdef ego next
+        stat = EG_getInfo(self.ptr, &oclass, &mtype, &topObj, &prev, &next)
+        if stat:
+            _checkErr(stat)
+        return oclass, mtype
+
+    def getInfoStr(self):
+        oclass, mtype = self.getInfo()
+        return oclass_str[oclass]
+        
+    def saveModel(self, str filename):
+        cdef int stat
+        stat = EG_saveModel(self.ptr, filename)
+        if stat:
+            _checkErr(stat)
+
+    def getTransform(self):
+        cdef int stat
+        cdef double T[12]
+        stat = EG_getTransformation(self.ptr, T)
+        xform = []
+        for i in range(12):
+            xform.append(T[i])
+        if stat:
+            _checkErr(stat)
+        return xform
+
+    def copy(self):
+        cdef int stat
+        new = pyego(self.ctx)
+        stat = EG_copyObject(self.ptr, NULL, &new.ptr)
+        if stat:
+            _checkErr(stat)
+
+    def flip(self):
+        cdef int stat
+        flip = pyego(self.ctx)
+        stat = EG_flipObject(self.ptr, &flip.ptr)
+        if stat:
+            _checkErr(stat)
+
+    def getGeometry(self):
+        cdef int stat
+        cdef int oclass
+        cdef int mtype
+        cdef int *ivec = NULL
+        cdef double *rvec = NULL
+        cdef ego refgeo
+        stat = EG_getGeometry(self.ptr, &oclass, &mtype, &refgeo, 
+                              &ivec, &rvec)
+        if stat:
+            _checkErr(stat)
+        return oclass, mtype
 
     def getRange(self):
         cdef int stat
@@ -421,11 +594,22 @@ cdef class pyego:
 
     def getBody(self):
         cdef int stat
-        body = pyego(self)
+        body = pyego(self.ctx)
         stat = EG_getBody(self.ptr, &body.ptr)
         if stat:
             _checkErr(stat)
         return body
+
+    def getArea(self, limits=None):
+        cdef int stat
+        cdef double lim[4]
+        cdef double area
+        if self.ptr.oclass == SURFACE:
+            lim[0] = limits[0]
+            lim[1] = limits[1]
+            lim[2] = limits[2]
+            lim[3] = limits[3]
+        stat = EG_getArea(self.ptr, lim, &area)
 
     def getTopology(self):
         cdef int stat
@@ -442,7 +626,7 @@ cdef class pyego:
             _checkErr(stat)
         children = []
         for i in range(nchildren):
-            c = pyego(self)
+            c = pyego(self.ctx)
             c.ptr = childarray[i]
             children.append(c)
 
@@ -458,162 +642,9 @@ cdef class pyego:
             lim = [limits[0], limits[1]]
         elif oclass == FACE:
             lim = [limits[0], limits[1], limits[2], limits[3]]
-        geo = pyego(self)
+        geo = pyego(self.ctx)
         geo.ptr = geom
         return geo, oclass, mtype, lim, children, sens
-
-    def makeTopology(self, int oclass, int mtype=0,
-                     children=None, sens=None, rdata=None, refgeo=True):
-        cdef int stat
-        cdef ego refptr = NULL
-        cdef double data[4]
-        cdef int nchildren = 0
-        cdef ego *childarray = NULL
-        cdef int *senses = NULL
-        errmsg = None
-        if oclass == EDGE:
-            if mtype != TWONODE and mtype != ONENODE and mtype != CLOSED:
-                errmsg = 'EDGE must be TWONODE, ONENODE or CLOSED'
-        elif oclass == LOOP:
-            if mtype != OPEN and mtype != CLOSED:
-                errmsg = 'LOOP must be OPEN or CLOSED'
-        elif oclass == FACE:
-            if mtype != SFORWARD and mtype != SREVERSE:
-                errmsg = 'FACE must be SFORWARD or SREVERSE'
-        elif oclass == SHELL:
-            if mtype != OPEN and mtype != CLOSED:
-                errmsg = 'SHELL must be OPEN or CLOSED'
-        elif oclass == BODY:
-            if (mtype != WIREBODY and mtype != FACEBODY and
-                mtype != SHEETBODY and mtype != SOLIDBODY):
-                errmsg = 'BODY must be WIREBODY, FACEBODY'
-                errmsg += ', SHEETBODY or SOLIDBODY'
-        if errmsg is not None:
-            raise ValueError(errmsg)
-        
-        if ((oclass == FACE or oclass == LOOP) and
-            len(children) != len(sens)):
-            errmsg = 'Children and senses list must be of equal length'
-            raise ValueError(errmsg)
-
-        if oclass == NODE:
-            data[0] = rdata[0]
-            data[1] = rdata[1]
-            data[2] = rdata[2]
-        elif oclass == EDGE:
-            data[0] = rdata[0]
-            data[1] = rdata[1]
-        elif oclass == FACE:
-            data[0] = rdata[0]
-            data[1] = rdata[1]
-            data[2] = rdata[2]
-            data[3] = rdata[3]
-
-        if children is not None:
-            nchildren = len(children)
-            childarray = <ego*>malloc(nchildren*sizeof(ego))
-            for i in range(nchildren):
-                childarray[i] = (<pyego>children[i]).ptr
-
-        if oclass == FACE or oclass == LOOP:
-            senses = <int*>malloc(nchildren*sizeof(int))
-            for i in range(nchildren):
-                senses[i] = sens[i]
-
-        if refgeo:
-            refptr = self.ptr
-        else:
-            refptr = NULL
-            
-        new = pyego(self)
-        stat = EG_makeTopology(self.context, refptr, oclass, mtype,
-                               data, nchildren, childarray,
-                               senses, &new.ptr)
-        if stat:
-            _checkErr(stat)
-        free(childarray)
-        free(senses)
-        return new
-
-    def makeLoop(self, list edges, pyego geom, double toler):
-        cdef int stat 
-        cdef int nedges
-        cdef ego *edgs
-        nedges = len(edges)
-        edgs = <ego*>malloc(nedges*sizeof(ego))
-        for i in range(nedges):
-            edgs[i] = (<pyego>edges[i]).ptr
-        new = pyego(self)
-        stat = EG_makeLoop(nedges, edgs, geom.ptr, toler, &new.ptr)
-        free(edgs)
-        if stat:
-            _checkErr(stat)
-        return new
-
-    def makeFace(self, pyego obj, int mtype, rdata=None):
-        cdef int stat
-        cdef double data[4]
-        cdef double *ptr = NULL
-        if obj.ptr.oclass == SURFACE:
-            # Limits of the surface
-            data[0] = rdata[0]
-            data[1] = rdata[1]
-            data[2] = rdata[2]
-            data[3] = rdata[3]
-            ptr = data
-        elif obj.ptr.oclass == FACE:
-            data[0] = rdata[0]
-            data[1] = rdata[1]
-            ptr = data
-
-        new = pyego(self)
-        stat = EG_makeFace(obj.ptr, mtype, ptr, &new.ptr)
-        if stat:
-            _checkErr(stat)
-        return new
-
-    def makeSolidBody(self, int stype, rdata=None):
-        cdef int stat
-        cdef double *rptr = NULL
-        rvec = []
-        try:
-            if rdata is not None:
-                for item in rdata:
-                    if isinstance(item, (int, float)):
-                        rvec.append(item)
-                    else:
-                        rvec.extend(item)
-        except:
-            errmsg = 'Failed to convert real data'
-            raise ValueError(errmsg)
-        
-        if len(rvec) > 0:
-            rptr = <double*>malloc(len(rvec)*sizeof(double))
-            for i in range(len(rvec)):
-                rptr[i] = rvec[i]
-
-        body = pyego(self)
-        stat = EG_makeSolidBody(self.context, stype, rptr, &body.ptr)
-        if rptr:
-            free(rptr)
-        return body
-
-    def sewFaces(self, list objlist, double toler=0.0, int flag=0):
-        cdef ego context
-        cdef int nobj
-        cdef ego *objs
-
-        if len(objlist) > 0:
-            nobj = len(objlist)
-            objs = <ego*>malloc(nobj*sizeof(ego))
-            for i in range(nobj):
-                objs[i] = (<pyego>objlist[i]).ptr
-            new = pyego(self)
-            stat = EG_sewFaces(nobj, objs, toler, flag, &new.ptr)
-            if stat:
-                _checkErr(stat)
-            free(objs)
-        return new
 
     def getBodyTopos(self, int oclass, pyego ref=None):
         cdef int stat
@@ -631,7 +662,7 @@ cdef class pyego:
             _checkErr(stat)
         tlist = []
         for i in range(ntopos):
-            t = pyego(self)
+            t = pyego(self.ctx)
             t.ptr = topos[i]
             tlist.append(t)
         free(topos)
@@ -639,7 +670,7 @@ cdef class pyego:
 
     def solidBoolean(self, pyego tool, int oper):
         cdef int stat
-        new = pyego(self)
+        new = pyego(self.ctx)
         stat = EG_solidBoolean(self.ptr, tool.ptr, oper, &new.ptr)
         if stat:
             _checkErr(stat)
@@ -648,7 +679,7 @@ cdef class pyego:
         cdef int stat
         cdef int nobj
         cdef ego *faceEdgePairs = NULL
-        new = pyego(self)
+        new = pyego(self.ctx)
         stat = EG_intersection(self.ptr, tool.ptr, &nobj, &faceEdgePairs, 
                                &new.ptr)
         if stat == EGADS_CONSTERR:
@@ -657,10 +688,10 @@ cdef class pyego:
             _checkErr(stat)
         pairs = []
         for i in range(nobj):
-            f = pyego(self)
+            f = pyego(self.ctx)
             f.ptr = faceEdgePairs[2*i]
             pairs.append(f)
-            e = pyego(self)
+            e = pyego(self.ctx)
             e.ptr = faceEdgePairs[2*i+1]
             pairs.append(e)
         if faceEdgePairs:
@@ -675,7 +706,7 @@ cdef class pyego:
         objs = <ego*>malloc(nobj*sizeof(ego))
         for i in range(nobj):
             objs[i] = (<pyego>pairs[i]).ptr
-        new = pyego(self)
+        new = pyego(self.ctx)
         stat = EG_imprintBody(self.ptr, nobj/2, objs, &new.ptr)
         free(objs)
         if stat:
@@ -691,7 +722,7 @@ cdef class pyego:
         edgs = <ego*>malloc(nedges*sizeof(ego))
         for i in range(nedges):
             edgs[i] = (<pyego>edges[i]).ptr
-        new = pyego(self)
+        new = pyego(self.ctx)
         stat = EG_filletBody(self.ptr, nedges, edgs, radius, &new.ptr,
                              &facemap)
         free(edgs)
@@ -704,7 +735,7 @@ cdef class pyego:
         cdef double direction[3]
         for i in range(3):
             direction[i] = _dir[i]
-        new = pyego(self)
+        new = pyego(self.ctx)
         stat = EG_extrude(self.ptr, dist, direction, &new.ptr)
         if stat:
             _checkErr(stat)
@@ -715,7 +746,7 @@ cdef class pyego:
         cdef double axis[3]
         for i in range(3):
             axis[i] = _axis[i]
-        new = pyego(self)
+        new = pyego(self.ctx)
         stat = EG_rotate(self.ptr, angle, axis, &new.ptr)
         if stat:
             _checkErr(stat)
@@ -723,7 +754,7 @@ cdef class pyego:
 
     def sweep(self, pyego spline, int mode):
         cdef int stat
-        new = pyego(self)
+        new = pyego(self.ctx)
         stat = EG_sweep(self.ptr, spline.ptr, mode, &new.ptr)
         if stat:
             _checkErr(stat)
@@ -749,7 +780,7 @@ cdef class pyego:
             for i in range(min(len(_rc2), 8)):
                 rc2[i] = _rc2[i]
             rc2ptr = rc2          
-        new = pyego(self)
+        new = pyego(self.ctx)
         stat = EG_blend(nsec, secs, rc1ptr, rc2ptr, &new.ptr)
         if stat:
             _checkErr(stat)

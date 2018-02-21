@@ -202,8 +202,8 @@ cdef extern from "egads.h":
                           int *senses, ego *topo )
     int  EG_makeLoop( int nedge, ego *edges, ego geom,
                       double toler, ego *result )
-    # int  EG_getArea( ego object, const double *limits,
-    #                  double *area )
+    int  EG_getArea( ego object, const double *limits,
+                     double *area )
     int  EG_makeFace( ego object, int mtype,
                       const double *limits, ego *face )
     int  EG_getBodyTopos( const ego body, ego src,

@@ -1,8 +1,8 @@
 from egads4py import egads
 
-ego = egads.pyego()
-ego.loadModel('misc1.step')
-ego.setOutLevel(2)
+ctx = egads.context()
+ctx.setOutLevel(2)
+ego = ctx.loadModel('misc1.step')
 
 geo, oclass, mtype, lim, body, senses = ego.getTopology()
 
