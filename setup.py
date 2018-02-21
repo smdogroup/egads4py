@@ -1,7 +1,6 @@
 import os
 from glob import glob
 from subprocess import check_output
-import numpy
 
 # Import distutils
 from setuptools import setup
@@ -21,7 +20,6 @@ rel_inc_dirs = ['include', 'src', 'src/Surreal']
 
 # Convert from relative to absolute directories
 inc_dirs = get_global_dir(rel_inc_dirs)
-inc_dirs.append(numpy.get_include())
 
 lib_dirs = [os.path.join(os.environ['CASROOT'],
                          os.environ['CASARCH'], 'lib')]

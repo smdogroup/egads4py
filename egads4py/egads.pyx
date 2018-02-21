@@ -1,10 +1,3 @@
-# Import numpy 
-cimport numpy as np
-import numpy as np
-
-# Ensure that numpy is initialized
-np.import_array()
-
 # Import the definition required for const strings
 from libc.string cimport const_char
 from libc.stdlib cimport malloc, free
@@ -258,17 +251,23 @@ cdef class pyego:
         if stat:
             _checkErr(stat)
 
-    def makeTransform(self, np.ndarray[double, ndim=1, mode='c'] xform):
+    def makeTransform(self, xform):
         cdef int stat
+        cdef double T[12]
+        for i in range(12):
+            T[i] = xform[i]
         new = pyego(self)
-        stat = EG_makeTransform(self.context, <double*>xform.data, &new.ptr)
+        stat = EG_makeTransform(self.context, T, &new.ptr)
         if stat:
             _checkErr(stat)
 
     def getTransform(self):
         cdef int stat
-        cdef np.ndarray xform = np.zeros(12, np.double)
-        stat = EG_getTransformation(self.ptr, <double*>xform.data)
+        cdef double T[12]
+        stat = EG_getTransformation(self.ptr, T)
+        xform = []
+        for i in range(12):
+            xform.append(T[i])
         if stat:
             _checkErr(stat)
         return xform
@@ -301,8 +300,7 @@ cdef class pyego:
         return oclass, mtype
 
     def makeGeometry(self, int oclass, int mtype,
-                     idata=None, rdata=None,                   
-                     pyego refgeo=None):
+                     idata=None, rdata=None, pyego refgeo=None):
         cdef int stat
         cdef ego rgeo = NULL
         cdef int *iptr = NULL
@@ -701,20 +699,24 @@ cdef class pyego:
             _checkErr(stat)
         return new
     
-    def extrude(self, double dist, 
-                np.ndarray[double, ndim=1, mode='c'] _dir):
+    def extrude(self, double dist, _dir):
         cdef int stat
+        cdef double direction[3]
+        for i in range(3):
+            direction[i] = _dir[i]
         new = pyego(self)
-        stat = EG_extrude(self.ptr, dist, <double*>_dir.data, &new.ptr)
+        stat = EG_extrude(self.ptr, dist, direction, &new.ptr)
         if stat:
             _checkErr(stat)
         return new
 
-    def rotate(self, double angle, 
-               np.ndarray[double, ndim=1, mode='c'] axis):
+    def rotate(self, double angle, _axis):
         cdef int stat
+        cdef double axis[3]
+        for i in range(3):
+            axis[i] = _axis[i]
         new = pyego(self)
-        stat = EG_rotate(self.ptr, angle, <double*>axis.data, &new.ptr)
+        stat = EG_rotate(self.ptr, angle, axis, &new.ptr)
         if stat:
             _checkErr(stat)
         return new
@@ -727,19 +729,28 @@ cdef class pyego:
             _checkErr(stat)
         return stat
 
-    def blend(self, list sections, 
-              np.ndarray[double, ndim=1, mode='c'] rc1,
-              np.ndarray[double, ndim=1, mode='c'] rc2):
+    def blend(self, list sections, list _rc1=None, list _rc2=None):
         cdef int stat
         cdef int nsec
         cdef ego *secs
+        cdef double rc1[8]
+        cdef double rc2[8]
+        cdef double *rc1ptr = NULL
+        cdef double *rc2ptr = NULL
         nsec = len(sections)
         secs = <ego*>malloc(nsec*sizeof(ego))
         for i in range(nsec):
             secs[i] = (<pyego>sections[i]).ptr
+        if _rc1 is not None:
+            for i in range(min(len(_rc1), 8)):
+                rc1[i] = _rc1[i]
+            rc1ptr = rc1
+        if _rc2 is not None:
+            for i in range(min(len(_rc2), 8)):
+                rc2[i] = _rc2[i]
+            rc2ptr = rc2          
         new = pyego(self)
-        stat = EG_blend(nsec, secs, <double*>rc1.data, <double*>rc2.data,
-                        &new.ptr)
+        stat = EG_blend(nsec, secs, rc1ptr, rc2ptr, &new.ptr)
         if stat:
             _checkErr(stat)
         free(secs)

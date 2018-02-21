@@ -1,10 +1,6 @@
 # Import string stuff
 from libc.string cimport const_char
 
-# Import numpy 
-cimport numpy as np
-import numpy as np
-
 cdef extern from "egadsErrors.h":
     enum:
         _EGADS_TESSTATE"EGADS_TESSTATE"
