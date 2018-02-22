@@ -141,22 +141,22 @@ cdef extern from "egads.h":
     int  EG_flipObject( const ego object, ego *flippedCopy )
     int  EG_close( ego context )
 
-    # int  EG_attributeAdd( ego obj, const char *name, int type, int len,
-    #                       const int    *ints, 
-    #                       const double *reals,
-    #                       const char   *str )
-    # int  EG_attributeDel( ego object, const char *name )
-    # int  EG_attributeNum( const ego obj, int *num )
-    # int  EG_attributeGet( const ego obj, int index, const char **name,
-    #                       int *atype, int *len, 
-    #                       const int    **ints,
-    #                       const double **reals, 
-    #                       const char   **str )
-    # int  EG_attributeRet( const ego obj, const char *name, int *atype, 
-    #                       int *len, const int    **ints,
-    #                       const double **reals, 
-    #                       const char   **str )
-    # int  EG_attributeDup( const ego src, ego dst )
+    int  EG_attributeAdd( ego obj, const char *name, int type, int len,
+                          const int    *ints, 
+                          const double *reals,
+                          const char   *str )
+    int  EG_attributeDel( ego object, const char *name )
+    int  EG_attributeNum( const ego obj, int *num )
+    int  EG_attributeGet( const ego obj, int index, const char **name,
+                          int *atype, int *len, 
+                          const int    **ints,
+                          const double **reals, 
+                          const char   **str )
+    int  EG_attributeRet( const ego obj, const char *name, int *atype, 
+                          int *len, const int    **ints,
+                          const double **reals, 
+                          const char   **str )
+    int  EG_attributeDup( const ego src, ego dst )
 
     int  EG_getGeometry( const ego geom, int *oclass, int *mtype,
                          ego *refGeom, int **ivec, double **rvec )
@@ -208,7 +208,7 @@ cdef extern from "egads.h":
                       const double *limits, ego *face )
     int  EG_getBodyTopos( const ego body, ego src,
                           int oclass, int *ntopo, ego **topos )
-    # int  EG_indexBodyTopo( const ego body, const ego src )
+    int  EG_indexBodyTopo( const ego body, const ego src )
     # int  EG_inTopology( const ego topo, const double *xyz )
     # int  EG_inFace( const ego face, const double *uv )
     # int  EG_getEdgeUV( const ego face, const ego edge, int sense,
