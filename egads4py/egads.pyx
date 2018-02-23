@@ -1254,6 +1254,23 @@ cdef class pyego:
         return new
     
     def extrude(self, double dist, _dir):
+        '''
+        Extrudes the source Object through the distance specified. 
+        If the Object is either a LOOP or WIREBODY the result is a 
+        SHEETBODY. If the source is either a FACE or FACEBODY then 
+        the returned Object is a SOLIDBODY.
+
+        Parameters
+        ----------
+        dist: the distance to extrude
+
+        dir the vector that is the extrude direction (3 in length)
+
+        Returns
+        -------
+        the resultant BODY object (type is one greater than the 
+        input source object)
+        '''
         cdef int stat
         cdef double direction[3]
         for i in range(3):
