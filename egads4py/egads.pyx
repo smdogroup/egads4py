@@ -220,9 +220,21 @@ cdef class context:
         return
     
     def setOutLevel(self, int outlevel):
+        '''
+        Set output level
+
+        Parameters
+        ----------
+        outlevel: 0 <= outlevel <= 2
+        '''
         EG_setOutLevel(self.context, outlevel)
 
     def makeTransform(self, xform):
+        '''
+        Creates a TRANSFORM object from the 12 values. The rotation
+        portion [3][3] must be “scaled” orthonormal (orthogonal with a
+        single scale factor).
+        '''
         cdef int stat
         cdef double T[12]
         for i in range(12):
@@ -638,6 +650,101 @@ cdef class context:
         if stat:
             _checkErr(stat)
         return new
+    
+    def blend(self, list sections, list _rc1=None, list _rc2=None):
+        '''
+        Simply lofts the input Objects to create a BODY Object (that
+        has the type SOLIDBODY or SHEETBODY). Cubic BSplines are
+        used. All sections must have the same number of Edges (except
+        for NODEs) and the Edge order in each (defined in a CCW
+        manner) is used to specify the loft connectivity .
+
+        Parameters
+        ----------
+        sections:
+        list of WIREBODY or LOOP objects to Blend - nSection in len
+        the first and last can be NODEs and/or FACEs (only one LOOP),
+        if the first and last are NODEs and/or FACEs (and the
+        intermediate sections are CLOSED) the result will be a
+        SOLIDBODY otherwise a SHEETBODY will be constructed interior
+        sections can be repeated once for C1 or twice for C0
+
+        rc1: specifies treatment* at the first section (or None for no
+        treatment)
+
+        rc2: specifies treatment* at the last section (or None for no
+        treatment)
+
+        Returns
+        -------
+        the resultant BODY object
+        
+        * for NODEs -- elliptical treatment (8 in length): radius of
+        curvature1, unit direction, rc2, orthogonal direction;
+        nSection must be at least 3 (or 4 for treatments at both ends)
+        for other sections -- setting tangency (4 in length):
+        magnitude, unit direction for FACEs with 2 or 3 EDGEs -- make
+        a Wing Tip-like cap: zero, growthFactor (len of 2)
+        '''
+        cdef int stat
+        cdef int nsec
+        cdef ego *secs
+        cdef double rc1[8]
+        cdef double rc2[8]
+        cdef double *rc1ptr = NULL
+        cdef double *rc2ptr = NULL
+        nsec = len(sections)
+        secs = <ego*>malloc(nsec*sizeof(ego))
+        for i in range(nsec):
+            secs[i] = (<pyego>sections[i]).ptr
+        if _rc1 is not None:
+            for i in range(min(len(_rc1), 8)):
+                rc1[i] = _rc1[i]
+            rc1ptr = rc1
+        if _rc2 is not None:
+            for i in range(min(len(_rc2), 8)):
+                rc2[i] = _rc2[i]
+            rc2ptr = rc2          
+        new = pyego(self)
+        stat = EG_blend(nsec, secs, rc1ptr, rc2ptr, &new.ptr)
+        if stat:
+            _checkErr(stat)
+        free(secs)
+        return new
+
+    def ruled(self, list sections):
+        '''
+        Produces a BODY Object (that has the type SOLIDBODY or SHEETBODY)
+        that goes through the sections by ruled surfaces between each. All
+        sections must have the same number of Edges (except for NODEs) and
+        the Edge order in each is used to specify the connectivity.
+
+        Parameters
+        ----------
+        sections:
+        A list of NODE, WIREBODY, LOOP and/or FACE objects to operate
+        upon. Any FACE objects must contain only a single LOOP, Only
+        the first and last sections can be NODEs, If the first and
+        last sections are NODEs and/or FACEs and all WIREBODY and LOOP
+        objects are closed, the result will be a SOLIDBODY otherwise a
+        SHEETBODY will be constructed result the resultant BODY object
+
+        Note: for both blend and ruled all Loops must have their Edges
+        ordered in a counterclockwise manner.
+        '''
+        cdef int stat
+        cdef int nsec
+        cdef ego *secs
+        nsec = len(sections)
+        secs = <ego*>malloc(nsec*sizeof(ego))
+        for i in range(nsec):
+            secs[i] = (<pyego>sections[i]).ptr
+        new = pyego(self)
+        stat = EG_ruled(nsec, secs, &new.ptr)
+        free(secs)
+        if stat:
+            _checkErr(stat)
+        return
 
 cdef class pyego:
     cdef ego ptr
@@ -669,6 +776,14 @@ cdef class pyego:
         return False
 
     def getInfo(self):
+        '''
+        Return information about the object
+
+        Returns
+        -------
+        oclass:  object class type
+        mtype:   object sub-type
+        '''
         cdef int stat
         cdef int oclass
         cdef int mtype
@@ -681,10 +796,14 @@ cdef class pyego:
         return oclass, mtype
 
     def getInfoStr(self):
+        '''Get a string representation of the class type'''
         oclass, mtype = self.getInfo()
         return oclass_str[oclass]
         
     def saveModel(self, str filename, overwrite=False):
+        '''
+        Saves the model based on the filename extension
+        '''        
         cdef int stat
         if overwrite and os.path.exists(filename):
             os.remove(filename)
@@ -693,6 +812,12 @@ cdef class pyego:
             _checkErr(stat)
 
     def getTransform(self):
+        '''
+        Returns the transformation information. This appears like is a
+        column- major matrix that is 4 columns by 3 rows and could be
+        thought of as [3][4] in C (though is flat) and in FORTRAN
+        dimensioned as (4,3).
+        '''
         cdef int stat
         cdef double T[12]
         stat = EG_getTransformation(self.ptr, T)
@@ -704,11 +829,15 @@ cdef class pyego:
         return xform
 
     def copy(self):
+        '''
+        Creates a new EGADS object by copying.
+        '''
         cdef int stat
         new = pyego(self.ctx)
         stat = EG_copyObject(self.ptr, NULL, &new.ptr)
         if stat:
             _checkErr(stat)
+        return new
 
     def flip(self):
         '''
@@ -729,6 +858,19 @@ cdef class pyego:
             _checkErr(stat)
 
     def getGeometry(self):
+        '''
+        Returns information about the geometric object: 
+
+        Returns
+        -------
+        oclass PCURVE, CURVE or SURFACE
+        mtype PCURVE/CURVE
+        . LINE, CIRCLE, ELLIPSE, PARABOLA, HYPERBOLA, TRIMMED,
+        BEZIER, BSPLINE, OFFSET
+        SURFACE
+        . PLANE, SPHERICAL, CYLINDRICAL, REVOLUTION, TORIODAL,
+        TRIMMED, BEZIER, BSPLINE, OFFSET, CONICAL, EXTRUSION
+        '''
         cdef int stat
         cdef int oclass
         cdef int mtype
@@ -821,6 +963,9 @@ cdef class pyego:
         return None
 
     def getTolerance(self):
+        '''
+        Get the tolerance associated with this object
+        '''
         cdef int stat
         cdef double tol
         stat = EG_getTolerance(self.ptr, &tol)
@@ -829,12 +974,18 @@ cdef class pyego:
         return tol
 
     def setTolerance(self, double tol):
+        '''
+        Set the tolerance associated with this object
+        '''
         cdef int stat
         stat = EG_setTolerance(self.ptr, tol)
         if stat:
             _checkErr(stat)
 
     def getBody(self):
+        '''
+        Get the body that this object is contained within
+        '''
         cdef int stat
         body = pyego(self.ctx)
         stat = EG_getBody(self.ptr, &body.ptr)
@@ -843,6 +994,9 @@ cdef class pyego:
         return body
 
     def getArea(self, limits=None):
+        '''
+        Get the area of the geometric object
+        '''
         cdef int stat
         cdef double lim[4]
         cdef double area
@@ -852,7 +1006,7 @@ cdef class pyego:
             lim[2] = limits[2]
             lim[3] = limits[3]
         stat = EG_getArea(self.ptr, lim, &area)
-
+        return area
 
     def attributeAdd(self, str name, int atype, data):
         '''
@@ -1148,6 +1302,32 @@ cdef class pyego:
         return EG_indexBodyTopo(self.ptr, src.ptr)
 
     def solidBoolean(self, pyego tool, int oper):
+        '''
+        Performs the Solid Boolean Operations (SBOs) on the source
+        BODY Object (that has the type SOLIDBODY). The tool object
+        types depend on the operation. This supports Intersection,
+        Subtraction and Union. The object must be a SOLIDBODY or
+        MODEL.
+
+        Note: This may be called with src being a MODEL. In this case
+        tool may be a SOLIDBODY for Intersection or a FACE/FACEBODY
+        for Fusion. The input MODEL may contain anything, but must not
+        have duplicate topology.
+
+        Parameters
+        ----------
+        tool: the tool object:
+        either a SOLIDBODY for all operators or a FACE/FACEBODY for
+        Subtraction.
+
+        oper: the operation to perform
+
+        Returns
+        -------
+        the resultant MODEL object (this is because there may be
+        multiple bodies from either the subtraction or intersection
+        operation).
+        '''
         cdef int stat
         new = pyego(self.ctx)
         stat = EG_solidBoolean(self.ptr, tool.ptr, oper, &new.ptr)
@@ -1237,6 +1417,20 @@ cdef class pyego:
         return new
 
     def filletBody(self, list edges, double radius):
+        '''
+        Fillets the EDGEs on the source BODY Object (that has the type
+        SOLIDBODY or SHEETBODY).
+
+        Parameters
+        ----------
+        edges: list of EDGE objects to fillet
+        radius:  the radius of the fillets created
+
+        Returns
+        -------
+        the resultant BODY object (with the same type as the input
+        source object)
+        '''
         cdef int stat
         cdef nedges = 0
         cdef ego* edgs = NULL
@@ -1249,6 +1443,7 @@ cdef class pyego:
         stat = EG_filletBody(self.ptr, nedges, edgs, radius, &new.ptr,
                              &facemap)
         free(edgs)
+        free(facemap)
         if stat:
             _checkErr(stat)
         return new
@@ -1282,9 +1477,25 @@ cdef class pyego:
         return new
 
     def rotate(self, double angle, _axis):
+        '''
+        Rotates the source Object about the axis through the angle
+        specified. If the Object is either a LOOP or WIREBODY the
+        result is a SHEETBODY. If the source is either a FACE or
+        FACEBODY then the returned Object is a SOLIDBODY.
+
+        Parameters
+        ----------
+        angle: the angle to rotate the object through [0-360 Degrees]
+        axis: a point (on the axis) and a direction (6 in length)
+
+        Returns
+        -------
+        the resultant BODY object (type is one greater than the input
+        source object)
+        '''
         cdef int stat
-        cdef double axis[3]
-        for i in range(3):
+        cdef double axis[6]
+        for i in range(6):
             axis[i] = _axis[i]
         new = pyego(self.ctx)
         stat = EG_rotate(self.ptr, angle, axis, &new.ptr)
@@ -1293,54 +1504,23 @@ cdef class pyego:
         return new
 
     def sweep(self, pyego spline, int mode):
+        '''
+        Sweeps the source Object through the “spine” specified. The
+        spine can be either an EDGE, LOOP or WIREBODY. If the source
+        Object is either a LOOP or WIREBODY the result is a
+        SHEETBODY. If the source is either a FACE or FACEBODY then the
+        returned Object is a SOLIDBODY.
+
+        Parameters
+        ----------
+        spline: the Object used as guide curve segment(s) to sweep the
+        source through
+
+        mode: Integer indicating the mode
+        '''
         cdef int stat
         new = pyego(self.ctx)
         stat = EG_sweep(self.ptr, spline.ptr, mode, &new.ptr)
         if stat:
             _checkErr(stat)
-        return stat
-
-    def blend(self, list sections, list _rc1=None, list _rc2=None):
-        cdef int stat
-        cdef int nsec
-        cdef ego *secs
-        cdef double rc1[8]
-        cdef double rc2[8]
-        cdef double *rc1ptr = NULL
-        cdef double *rc2ptr = NULL
-        nsec = len(sections)
-        secs = <ego*>malloc(nsec*sizeof(ego))
-        for i in range(nsec):
-            secs[i] = (<pyego>sections[i]).ptr
-        if _rc1 is not None:
-            for i in range(min(len(_rc1), 8)):
-                rc1[i] = _rc1[i]
-            rc1ptr = rc1
-        if _rc2 is not None:
-            for i in range(min(len(_rc2), 8)):
-                rc2[i] = _rc2[i]
-            rc2ptr = rc2          
-        new = pyego(self.ctx)
-        stat = EG_blend(nsec, secs, rc1ptr, rc2ptr, &new.ptr)
-        if stat:
-            _checkErr(stat)
-        free(secs)
         return new
-
-    def ruled(self, list sections):
-        cdef int stat
-        cdef int nsec
-        cdef ego *secs
-        if self.ptr:
-            stat = EG_deleteObject(self.ptr)
-            if stat:
-                _checkErr(stat)
-        nsec = len(sections)
-        secs = <ego*>malloc(nsec*sizeof(ego))
-        for i in range(nsec):
-            secs[i] = (<pyego>sections[i]).ptr
-        stat = EG_ruled(nsec, secs, &self.ptr)
-        free(secs)
-        if stat:
-            _checkErr(stat)
-        return

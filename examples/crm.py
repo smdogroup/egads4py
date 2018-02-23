@@ -61,7 +61,7 @@ def create_crm_model(ctx, ribspars, igesfile, top_index, bottom_index,
     bodies = body_model.getChildren()
 
     for face in ribspars.getBodyTopos(egads.FACE):
-        face.attributeAdd('name', egads.ATTRSTRING, 'box') 
+        face.attributeAdd('name', egads.ATTRSTRING, 'box')
 
     new_bodies = []
     for body in bodies:
@@ -118,13 +118,20 @@ def create_crm_model(ctx, ribspars, igesfile, top_index, bottom_index,
                 if has_top and has_bottom:
                     wingbox_faces.append(face)
             elif attr == 'top' or attr == 'bottom':
+                has_top = False
+                has_bottom = False
                 count = 0
                 for edge in body.getBodyTopos(egads.EDGE, ref=face):
                     index = body.indexBodyTopo(edge)
                     if 'box' in edge_attrs[index]:
                         count += 1
+                    for attr in edge_attrs[index]:
+                        if attr == 'top':
+                            has_top = True
+                        elif attr == 'bottom':
+                            has_bottom = True
 
-                if count >= 2:
+                if not (has_top and has_bottom):
                     wingbox_faces.append(face)
             
     # Sew the faces together
@@ -138,10 +145,10 @@ def compute_ribspar_edges():
     # Specify the boundary of the planform
     leList = [[25.0, 0.0, 0.0], 
               [25.0, 3.15, 0.0], 
-              [49.5, 36.0, 0.0]]
+              [49.5, 35.95, 0.0]]
     teList = [[30.3, 0.0, 0.0], 
               [30.3, 3.15, 0.0], 
-              [50.0, 36.0, 0.0]]
+              [50.0, 35.95, 0.0]]
 
     # Scale the Xpts
     leList = np.array(leList)
@@ -204,7 +211,6 @@ if 'plot' in sys.argv:
     plt.show()
 
 ctx = egads.context()
-ctx.setOutLevel(2)
 
 # Create all of the edges
 edges = create_edges(ctx, X, conn)
@@ -220,11 +226,12 @@ while nedges > 0:
 ribspar = ctx.sewFaces(faces, toler=1e-5, manifold=False)
 ribspar.saveModel('ribspar.step', overwrite=True)
 rsbodies = ribspar.getChildren()
-print 'rsbodies = ', rsbodies
 
+# Set the source file and the top/bottom surfaces
 igesfile = 'ucrm_13_5.iges'
 top_index = [0, 2, 4]
 bottom_index = [1, 3, 5]
 
+# Create the CRM step file
 create_crm_model(ctx, rsbodies[0], igesfile, top_index, bottom_index,
                  filename='ucrm.step')
