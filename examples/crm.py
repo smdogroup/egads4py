@@ -141,6 +141,31 @@ def create_crm_model(ctx, ribspars, igesfile, top_index, bottom_index,
     oml.saveModel(filename, overwrite=True)
     return
 
+
+def get_intersection(x, y, dx, dy,
+                     xrb, yrb, dxrb, dyrb):
+    '''
+    Find the intersection between the rib line and the
+    spar or root rib line (depending on the input
+
+    Solve the equation
+    (x + u*dx, y + u*dy) = (xrb + v*dxrb, yrb + v*dyrb)
+
+    For u and v and return the v component by solving the equations:
+
+    u*dx - v*dxrb = xrb - x
+    u*dy - v*dyrb = yrb - y
+    '''
+
+    # Solve for uv = [u, -v]
+    uv = np.linalg.solve(np.array([[dx, dxrb],
+                                   [dy, dyrb]]),
+                         np.array([xrb - x, yrb - y]))
+    
+    if uv[0] >= 0.0:
+        return uv[0]
+    return None
+
 def compute_ribspar_edges():
     # Specify the boundary of the planform
     leList = [[25.0, 0.0, 0.0], 
@@ -158,8 +183,23 @@ def compute_ribspar_edges():
 
     # Set the number of ribs/spars
     nrib1 = 3
-    nrib2 = 45
+    nrib2 = 46
     nribs = nrib1 + nrib2
+
+    # Compute and normalize the rib direction that is norma
+    # trailing edge direction
+    xspar = np.array([teList[1,0], teList[1,1]])
+    dspar = np.array([teList[2,0] - teList[1,0],
+                      teList[2,1] - teList[1,1]])
+    dspar = dspar/np.sqrt(np.dot(dspar, dspar))
+    
+    # Compute the direction of all ribs (normal to the te spar)
+    drib = np.array([dspar[1], -dspar[0]])
+
+    # Compute the first point and direction of the root rib
+    xroot = np.array([leList[1,0], leList[1,1]])
+    droot = np.array([teList[1,0] - leList[1,0],
+                      teList[1,1] - leList[1,1]])
 
     # Set the leading edge points
     le_ypts = np.linspace(leList[0,1], leList[1,1], nrib1+1)[:-1]
@@ -179,6 +219,21 @@ def compute_ribspar_edges():
     te_xpts = np.append(te_xpts,
                         np.linspace(teList[1,0], teList[2,0], nrib2))
 
+    for k in range(nrib1+1, nribs-1):
+        uspar = get_intersection(le_xpts[k], le_ypts[k], drib[0], drib[1],
+                                 xspar[0], xspar[1], dspar[0], dspar[1])
+        xnew = le_xpts[k] + uspar*drib[0]
+        ynew = le_ypts[k] + uspar*drib[1]
+
+        urib = get_intersection(le_xpts[k], le_ypts[k], drib[0], drib[1],
+                                xroot[0], xroot[1], droot[0], droot[1])
+        if urib < uspar:
+            xnew = le_xpts[k] + urib*drib[0]
+            ynew = le_ypts[k] + urib*drib[1]
+
+        te_xpts[k] = xnew
+        te_ypts[k] = ynew         
+
     # Add all of the points
     X = []
     for k in range(nribs):
@@ -187,8 +242,10 @@ def compute_ribspar_edges():
         X.append([te_xpts[k], te_ypts[k], 0.0])
 
     conn = []
-    for k in range(nribs-1):
-        conn.append([k+1, k+1 + nribs])
+    for k in range(1, nribs):
+        if k == nrib1:
+            continue
+        conn.append([k, k + nribs])
     for k in range(nribs-1):
         conn.append([k, k+1])
         conn.append([k+nribs, k+1+nribs])
