@@ -2,6 +2,7 @@ import numpy as np
 import os
 import sys
 from egads4py import egads
+from dcel import dcel
 
 def create_edges(ctx, X, frame_edges):
     # Create the nodes
@@ -54,8 +55,7 @@ def create_crm_model(ctx, ribspars, igesfile, top_index, bottom_index,
             face.attributeAdd('name', egads.ATTRSTRING, 'bottom') 
             all_faces.append(face)    
 
-    print 'Sewing iges surfaces together into a single body...'
-    body_model = ctx.sewFaces(all_faces, toler=1e-3, manifold=False)
+    body_model = ctx.sewFaces(all_faces, manifold=False)
 
     # Now 'bodies' should be a single SHEETBODY
     bodies = body_model.getChildren()
@@ -86,6 +86,7 @@ def create_crm_model(ctx, ribspars, igesfile, top_index, bottom_index,
     # Sew all the faces together
     print 'Sewing all the surfaces together into a single body...'
     everything = ctx.sewFaces(all_faces, toler=1e-3, manifold=False)
+    everything.saveModel('everything.step', overwrite=True)
 
     # Now loop over the edges and decide what should actual
     wingbox_faces = []
@@ -105,8 +106,8 @@ def create_crm_model(ctx, ribspars, igesfile, top_index, bottom_index,
             attr = face.attributeRet('name')
             if attr == 'box':
                 # Check if the edges have
-                has_top = False
-                has_bottom = False                    
+                has_top = True
+                has_bottom = True                    
                 for edge in body.getBodyTopos(egads.EDGE, ref=face):
                     index = body.indexBodyTopo(edge)
                     for attr in edge_attrs[index]:
@@ -118,21 +119,22 @@ def create_crm_model(ctx, ribspars, igesfile, top_index, bottom_index,
                 if has_top and has_bottom:
                     wingbox_faces.append(face)
             elif attr == 'top' or attr == 'bottom':
-                has_top = False
-                has_bottom = False
-                count = 0
-                for edge in body.getBodyTopos(egads.EDGE, ref=face):
-                    index = body.indexBodyTopo(edge)
-                    if 'box' in edge_attrs[index]:
-                        count += 1
-                    for attr in edge_attrs[index]:
-                        if attr == 'top':
-                            has_top = True
-                        elif attr == 'bottom':
-                            has_bottom = True
+                # has_top = False
+                # has_bottom = False
+                # count = 0
+                # for edge in body.getBodyTopos(egads.EDGE, ref=face):
+                #     index = body.indexBodyTopo(edge)
+                #     if 'box' in edge_attrs[index]:
+                #         count += 1
+                #     for attr in edge_attrs[index]:
+                #         if attr == 'top':
+                #             has_top = True
+                #         elif attr == 'bottom':
+                #             has_bottom = True
 
-                if not (has_top and has_bottom):
-                    wingbox_faces.append(face)
+                # if not (has_top and has_bottom):
+                # wingbox_faces.append(face)
+                pass
             
     # Sew the faces together
     print 'Sewing it all together one last time...'
@@ -141,50 +143,27 @@ def create_crm_model(ctx, ribspars, igesfile, top_index, bottom_index,
     oml.saveModel(filename, overwrite=True)
     return
 
-
-def get_intersection(x, y, dx, dy,
-                     xrb, yrb, dxrb, dyrb):
-    '''
-    Find the intersection between the rib line and the
-    spar or root rib line (depending on the input
-
-    Solve the equation
-    (x + u*dx, y + u*dy) = (xrb + v*dxrb, yrb + v*dyrb)
-
-    For u and v and return the v component by solving the equations:
-
-    u*dx - v*dxrb = xrb - x
-    u*dy - v*dyrb = yrb - y
-    '''
-
-    # Solve for uv = [u, -v]
-    uv = np.linalg.solve(np.array([[dx, dxrb],
-                                   [dy, dyrb]]),
-                         np.array([xrb - x, yrb - y]))
-    
-    if uv[0] >= 0.0:
-        return uv[0]
-    return None
-
 def compute_ribspar_edges():
     # Specify the boundary of the planform
-    leList = [[25.0, 0.0, 0.0], 
-              [25.0, 3.15, 0.0], 
-              [49.5, 35.95, 0.0]]
-    teList = [[30.3, 0.0, 0.0], 
-              [30.3, 3.15, 0.0], 
-              [50.0, 35.95, 0.0]]
+    # leList = [[25.0, 0.0], 
+    #           [25.0, 3.15], 
+    #           [49.5, 36.0]]
+    # teList = [[30.3, 0.0], 
+    #           [30.3, 3.15], 
+    #           [50.0, 36.0]]
 
-    # Scale the Xpts
-    leList = np.array(leList)
-    teList = np.array(teList)
-    leList *= 25.4
-    teList *= 25.4
+    # # Scale the positions
+    # leList = 25.4*np.array(leList)
+    # teList = 25.4*np.array(teList)
 
-    # Set the number of ribs/spars
-    nrib1 = 3
-    nrib2 = 46
-    nribs = nrib1 + nrib2
+    leList = [[27.0, 0.0],
+              [27.0, 3.15],
+              [46.0, 29.0]]
+    teList = [[30.5, 0.0],
+              [30.5, 3.15],
+              [46.5, 29.0]]
+    leList = 25.4*np.array(leList)
+    teList = 25.4*np.array(teList)
 
     # Compute and normalize the rib direction that is norma
     # trailing edge direction
@@ -201,59 +180,46 @@ def compute_ribspar_edges():
     droot = np.array([teList[1,0] - leList[1,0],
                       teList[1,1] - leList[1,1]])
 
-    # Set the leading edge points
-    le_ypts = np.linspace(leList[0,1], leList[1,1], nrib1+1)[:-1]
-    le_ypts = np.append(le_ypts, 
-                        np.linspace(leList[1,1], leList[2,1], nrib2))
+    # Create the connectivity
+    conn = [[0, 1, 4, 3], 
+            [1, 2, 5, 4]]
+    X = [[teList[0,0], teList[0,1]],
+         [teList[1,0], teList[1,1]],
+         [teList[2,0], teList[2,1]],
+         [leList[0,0], leList[0,1]],
+         [leList[1,0], leList[1,1]],
+         [leList[2,0], leList[2,1]]]
 
-    le_xpts = np.linspace(leList[0,0], leList[1,0], nrib1+1)[:-1]
-    le_xpts = np.append(le_xpts,
-                        np.linspace(leList[1,0], leList[2,0], nrib2))
+    # Create the dcel object
+    d = dcel(X, conn)
 
-    # Set the trailing edge points
-    te_ypts = np.linspace(teList[0,1], teList[1,1], nrib1+1)[:-1]
-    te_ypts = np.append(te_ypts, 
-                        np.linspace(teList[1,1], teList[2,1], nrib2))
+    # Set the number of ribs/spars
+    nrib1 = 4
+    nrib2 = 44
 
-    te_xpts = np.linspace(teList[0,0], teList[1,0], nrib1+1)[:-1]
-    te_xpts = np.append(te_xpts,
-                        np.linspace(teList[1,0], teList[2,0], nrib2))
+    # Find the intersection with the through-body box
+    x = leList[0,0]
+    y = np.linspace(leList[0,1], leList[1,1], nrib1)
+    for k in range(1, nrib1-1):
+        e, dist = d.find_closest_edge(x, y[k])
+        d.split_face(e.face, x, y[k], droot[0], droot[1])
 
-    for k in range(nrib1+1, nribs-1):
-        uspar = get_intersection(le_xpts[k], le_ypts[k], drib[0], drib[1],
-                                 xspar[0], xspar[1], dspar[0], dspar[1])
-        xnew = le_xpts[k] + uspar*drib[0]
-        ynew = le_ypts[k] + uspar*drib[1]
-
-        urib = get_intersection(le_xpts[k], le_ypts[k], drib[0], drib[1],
-                                xroot[0], xroot[1], droot[0], droot[1])
-        if urib < uspar:
-            xnew = le_xpts[k] + urib*drib[0]
-            ynew = le_ypts[k] + urib*drib[1]
-
-        te_xpts[k] = xnew
-        te_ypts[k] = ynew         
+    x = np.linspace(leList[1,0], leList[2,0], nrib2)
+    y = np.linspace(leList[1,1], leList[2,1], nrib2)
+    for k in range(1, nrib2-1):
+        e, dist = d.find_closest_edge(x[k], y[k])
+        d.split_face(e.face, x[k], y[k], drib[0], drib[1])
 
     # Add all of the points
-    X = []
-    for k in range(nribs):
-        X.append([le_xpts[k], le_ypts[k], 0.0])
-    for k in range(nribs):
-        X.append([te_xpts[k], te_ypts[k], 0.0])
-
-    conn = []
-    for k in range(1, nribs):
-        if k == nrib1:
-            continue
-        conn.append([k, k + nribs])
-    for k in range(nribs-1):
-        conn.append([k, k+1])
-        conn.append([k+nribs, k+1+nribs])
-        
-    return X, conn 
+    x, edge_conn, face_conn, face_sense = d.get_connectivity()
+    x = np.array(x, dtype=np.float)
+    X = np.zeros((x.shape[0], 3), dtype=np.float)
+    X[:,:2] = x[:]
+    
+    return X, edge_conn, face_conn, face_sense
 
 # Create the ribs/spars
-X, conn = compute_ribspar_edges()
+X, edge_conn, face_conn, face_sense = compute_ribspar_edges()
 X = np.array(X)
 X[:,2] = -50.0
 dist = 250.0
@@ -262,7 +228,7 @@ direction = [0, 0, 1]
 if 'plot' in sys.argv:
     import matplotlib.pylab as plt
     plt.figure()
-    for c in conn:
+    for c in edge_conn:
         plt.plot([X[c[0], 0], X[c[1], 0]], [X[c[0],1], X[c[1],1]])
     plt.axis('equal')
     plt.show()
@@ -270,24 +236,39 @@ if 'plot' in sys.argv:
 ctx = egads.context()
 
 # Create all of the edges
-edges = create_edges(ctx, X, conn)
+edges = create_edges(ctx, X, edge_conn)
 
-# Create the edges that form the ribs/spars
-nedges = len(edges)
-faces = []
-while nedges > 0:
-    loop, nedges = ctx.makeLoop(edges)
-    body = loop.extrude(dist, direction)
-    faces.extend(body.getBodyTopos(egads.FACE))
+edge_loops = []
+edge_sense = []
+for face_list, sense_list in zip(face_conn, face_sense):
+    for e, s in zip(face_list, sense_list):
+        if edges[e] is not None:
+            edge_loops.append(edges[e])
+            edges[e] = None
+            edge_sense.append(s)
 
-ribspar = ctx.sewFaces(faces, toler=1e-5, manifold=False)
-ribspar.saveModel('ribspar.step', overwrite=True)
+loop = ctx.makeTopology(egads.LOOP, egads.OPEN,
+                        children=edge_loops, sens=edge_sense)
+loop, nedges = ctx.makeLoop(edge_loops)
+
+# print nedges
+# body = loop.extrude(dist, direction)
+# faces = body.getBodyTopos(egads.FACE)
+
+ribspar = ctx.sewFaces(faces, manifold=False)
 rsbodies = ribspar.getChildren()
 
-# Set the source file and the top/bottom surfaces
-igesfile = 'ucrm_13_5.iges'
-top_index = [0, 2, 4]
-bottom_index = [1, 3, 5]
+print 'len(rsbodies) = ', len(rsbodies)
+
+# Parameters for the uCRM 13.5
+# igesfile = 'ucrm_13_5.iges'
+# top_index = [0, 2, 4]
+# bottom_index = [1, 3, 5]
+
+# Parameter for the CRM
+igesfile = 'final_surface.igs'
+top_index = [0, 2, 5]
+bottom_index = [1, 3, 6]
 
 # Create the CRM step file
 create_crm_model(ctx, rsbodies[0], igesfile, top_index, bottom_index,
