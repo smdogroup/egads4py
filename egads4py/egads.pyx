@@ -2,6 +2,9 @@
 from libc.string cimport const_char
 from libc.stdlib cimport malloc, free
 
+# Import numpy
+cimport numpy as np
+
 # Import the definitions
 from egads cimport *
 
@@ -202,6 +205,21 @@ def revision():
     EG_revision(&major, &minor, &occrev)
     return major, minor, occrev
 
+def _convert_rdata(rdata):
+    rvec = []
+    try:    
+        for item in rdata:
+            if isinstance(item, (int, float)):
+                rvec.append(item)
+            elif isinstance(item, np.ndarray):
+                rvec.extend(item.flatten())
+            else:
+                rvec.extend(item)
+    except:
+        errmsg = 'Failed to convert real data'
+        raise ValueError(errmsg)
+    return rvec
+
 cdef class context:
     cdef ego context
     cdef list refs
@@ -297,22 +315,16 @@ cdef class context:
                 for item in idata:
                     if isinstance(item, int):
                         ivec.append(item)
+                    elif isinstance(item, np.ndarray):
+                        ivec.extend(item.flatten())
                     else:
                         ivec.extend(item)
         except:
             errmsg = 'Failed to convert integer data'
             raise ValueError(errmsg)
 
-        try:
-            if rdata is not None:
-                for item in rdata:
-                    if isinstance(item, (int, float)):
-                        rvec.append(item)
-                    else:
-                        rvec.extend(item)
-        except:
-            errmsg = 'Failed to convert real data'
-            raise ValueError(errmsg)
+        if rdata is not None:
+            rvec = _convert_rdata(rdata)
 
         if len(ivec) > 0:
             iptr = <int*>malloc(len(ivec)*sizeof(int))
@@ -562,17 +574,9 @@ cdef class context:
         cdef int stat
         cdef double *rptr = NULL
         rvec = []
-        try:
-            if rdata is not None:
-                for item in rdata:
-                    if isinstance(item, (int, float)):
-                        rvec.append(item)
-                    else:
-                        rvec.extend(item)
-        except:
-            errmsg = 'Failed to convert real data'
-            raise ValueError(errmsg)
-        
+        if rdata is not None:
+            rvec = _convert_rdata(rdata)
+
         if len(rvec) > 0:
             rptr = <double*>malloc(len(rvec)*sizeof(double))
             for i in range(len(rvec)):
@@ -912,6 +916,21 @@ cdef class pyego:
                 _checkErr(stat)
             return [r[0], r[1], r[2], r[3]], periodic
         return None
+
+    def getBoundingBox(self):
+        '''
+        Computes the Cartesian bounding box around the object:
+
+        Returns
+        -------
+        the [x,y,z] min and [x,y,z] max
+        '''
+        cdef int stat
+        cdef double data[6]
+        stat = EG_getBoundingBox(self.ptr, data)
+        if stat:
+            _checkErr(stat)
+        return [data[0], data[1], data[2]], [data[3], data[4], data[5]]
 
     def evaluate(self, p):
         '''

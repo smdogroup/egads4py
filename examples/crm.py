@@ -82,42 +82,30 @@ def create_faces(ctx, X, frame_edges, nodes=None, edges=None, faces=None):
     # Create the faces
     for i, e in enumerate(frame_edges):
         if faces[i] is None:
-            elist = [edges[i], edges[ne+i], 
-                     edges[2*ne+e[0]], edges[2*ne+e[1]]]
-            loop, nedge = ctx.makeLoop(elist)
-            face = ctx.makeFace(loop, mtype=egads.SFORWARD)
+            elist = [edges[i], edges[2*ne+e[1]], 
+                     edges[ne+i], edges[2*ne+e[0]]]
+            senses = [1, 1, -1, -1]
+            loop = ctx.makeTopology(egads.LOOP, egads.CLOSED, 
+                                    children=elist, sens=senses)
+            mtype = egads.SFORWARD
+            face = ctx.makeFace(loop, mtype=mtype)
             face.attributeAdd('name', egads.ATTRSTRING, 'box%d'%(i))
             faces[i] = face
 
     return faces
 
-def load_oml_model(ctx, leList, teList, igesfile, surf_index):
-    # Load the model 
-    crm = ctx.loadModel(igesfile)
+def load_oml_model(ctx, leList, teList, omlfile):
+    # Load the model from a step file
+    crm = ctx.loadModel(omlfile)
 
-    # Get the FACEBODIES from the iges file model and prepare 
+    # Get the SHELLBODY or FACEBODY from the model and prepare 
     # to sew them together
-    body_surfs = crm.getChildren()
+    body = crm.getChildren()[0]
 
     # Extract the faces 
     surf_faces = []
-    for body in [body_surfs[index] for index in surf_index]:
-        for face in body.getBodyTopos(egads.FACE):
-            surf_faces.append(face)
-
-    # Create the model by sewing all the faces together
-    tol = 1e-5
-    for itr in range(10):
-        print 'tol = ', tol
-        oml = ctx.sewFaces(surf_faces, toler=tol, manifold=False)
-        if len(oml.getChildren()) == 1:
-            break
-        else:
-            tol *= np.sqrt(10)
-    oml.saveModel('oml.step', overwrite=True)
-
-    # Now 'oml' should be a single SHEETBODY
-    body = oml.getChildren()[0]
+    for face in body.getBodyTopos(egads.FACE):
+        surf_faces.append(face)
 
     # Go through the edge list and find whether the edge is in front
     # of the leading edge or behind the trailing edge
@@ -212,12 +200,18 @@ def create_crm_model(ctx, body, ribspars, filename='ucrm.step'):
 
         if has_top is False and has_bottom is False:
             wingbox_faces.append(face)
-            
-    # Sew the faces together
-    print 'Sewing it all together...'
-    tol = 5e-4
-    oml = ctx.sewFaces(wingbox_faces, toler=tol, manifold=False)
+    
+    # # Sew the faces together
+    # print 'Sewing it all together...'
+    # oml = ctx.sewFaces(wingbox_faces, toler=1e-4, manifold=False)
+    # oml.saveModel(filename, overwrite=True)
+
+    # Create the model
+    shell = ctx.makeTopology(egads.SHELL, egads.OPEN, children=wingbox_faces)
+    body = ctx.makeTopology(egads.BODY, egads.SHEETBODY, children=[shell])
+    oml = ctx.makeTopology(egads.MODEL, children=[body])
     oml.saveModel(filename, overwrite=True)
+
     return
 
 def compute_ribspar_edges(leList, teList, nrib1=5, nrib2=44):
@@ -280,10 +274,10 @@ def compute_ribspar_edges(leList, teList, nrib1=5, nrib2=44):
 #           [50.0, 36.0]]
 
 # Set the leading edge list and the trailing edge lists
-leList = [[26.4, 1e-10],
+leList = [[26.4, 0.0],
           [26.4, 3.0544008],
           [46.19, 29.35]]
-teList = [[32.32, 1e-10],
+teList = [[32.32, 0.0],
           [32.32, 3.0544008],
           [46.87, 29.35]]
 
@@ -291,48 +285,34 @@ teList = [[32.32, 1e-10],
 leList = 25.4*np.array(leList)
 teList = 25.4*np.array(teList)
 
-# Create the ribs/spars
-X, edge_conn, face_conn, face_sense = compute_ribspar_edges(leList, teList,
-                                                            nrib1=2, nrib2=2)
-X = np.array(X)
-
-# Set the z-locations
-X[:,0,2] = -50.0
-X[:,0,2] = 200.0
-
 # Create the egads context
 ctx = egads.context()
 
-# Parameters for the uCRM 13.5
-# igesfile = 'ucrm_13_5.iges'
-# surf_index = [0, 1, 2, 3, 4, 5]
-
-# Parameter for the CRM
-igesfile = 'final_surface.igs'
-surf_index = [0, 1, 2, 3, 5, 6]
+# Set the output file
+omlfile = 'ucrm_9_oml.step'
 
 # Load the OML model
-oml_body = load_oml_model(ctx, leList, teList, igesfile, surf_index)
+oml_body = load_oml_model(ctx, leList, teList, omlfile)
+xmin, xmax = oml_body.getBoundingBox()
 
-# Create the rib nodes/edges...
+# Create the ribs/spars
+X, edge_conn, face_conn, face_sense = compute_ribspar_edges(leList, teList)
+X = np.array(X)
 
-
-
-
+# Set the bounds on z so that they encompass the box
+X[:,0,2] = xmin[2]-0.1
+X[:,1,2] = xmax[2]+0.1
 
 # Create the faces, shell and body
-faces = create_faces(ctx, X, edge_conn, nodes, edges, faces)
+faces = create_faces(ctx, X, edge_conn)
 
-# Create the shell/body objects
-shell = ctx.makeTopology(egads.SHELL, egads.OPEN,
-                         children=faces)
-body = ctx.makeTopology(egads.BODY, egads.SHEETBODY,
-                        children=[shell])
-
-# Save the rib/spar arrangement as a model
+# Create the shell/body object
+shell = ctx.makeTopology(egads.SHELL, egads.OPEN, children=faces)
+body = ctx.makeTopology(egads.BODY, egads.SHEETBODY, children=[shell])
 model = ctx.makeTopology(egads.MODEL, children=[body])
+
+# Save the model
 model.saveModel('ribspars.step', overwrite=True)
 
 # Create the CRM step file
-create_crm_model(ctx, leList, teList, body, igesfile, surf_index,
-                 filename='ucrm.step')
+create_crm_model(ctx, oml_body, body, filename='ucrm.step')

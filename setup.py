@@ -2,6 +2,9 @@ import os
 from glob import glob
 from subprocess import check_output
 
+# Import numpy
+import numpy
+
 # Import distutils
 from setuptools import setup
 from distutils.core import Extension as Ext
@@ -25,6 +28,9 @@ lib_dirs = [os.path.join(os.environ['CASROOT'],
                          os.environ['CASARCH'], 'lib')]
 runtime_lib_dirs = [os.path.join(os.environ['CASROOT'],
                                  os.environ['CASARCH'], 'lib')]
+
+# Add the numpy directories
+inc_dirs.extend([numpy.get_include()])
 
 # Add the include directories from OpenCascade
 for sufix in ['include/oce', 'inc', 'include']:
