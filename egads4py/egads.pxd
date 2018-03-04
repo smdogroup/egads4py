@@ -167,8 +167,8 @@ cdef extern from "egads.h":
     int  EG_getRange( const ego geom, double *range, int *periodic )
     int  EG_evaluate( const ego geom, const double *param, 
                       double *results )
-    # int  EG_invEvaluate( const ego geom, double *xyz, double *param,
-    #                      double *results )
+    int  EG_invEvaluate( const ego geom, double *xyz, double *param,
+                         double *results )
     # int  EG_invEvaluateGuess( const ego geom, double *xyz, 
     #                           double *param, double *results )
     # int  EG_arcLength( const ego geom, double t1, double t2,

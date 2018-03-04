@@ -957,6 +957,50 @@ cdef class pyego:
                     r[15], r[16], r[17]]
         return None
 
+    def invEvaluate(self, xyz):
+        '''
+        Returns the result of inverse evaluation on the object. For
+        topology the result is limited to inside the EGDE/FACE valid
+        bounds. The object may be one of PCURVE, CURVE, SURFACE, EDGE
+        or FACE.
+
+        Parameters
+        ----------
+        xyz: [u,v] for a PCURVE and [x,y,z] for all others
+
+        Returns
+        -------
+        for PCURVE, CURVE or EDGE the one value is t
+        for SURFACE or FACE the 2 values are u then v the closest
+        position found is returned:
+        [u,v] for a PCURVE (2) and [x,y,z] for all others (3)
+        '''
+        cdef int stat
+        cdef double xp[3]
+        cdef double params[2]
+        cdef double result[3]
+
+        if self.ptr.oclass == EGADS_PCURVE:
+            xp[0] = xyz[0]
+            xp[1] = xyz[1]
+        else:
+            xp[0] = xyz[0]
+            xp[1] = xyz[1]
+            xp[2] = xyz[2]
+
+        stat = EG_invEvaluate(self.ptr, xp, params, result)
+        if stat:
+            _checkErr(stat)
+        if self.ptr.oclass == EGADS_PCURVE:
+            return params[0], [result[0], result[1]]
+        elif (self.ptr.oclass == EGADS_EDGE or
+              self.ptr.oclass == EGADS_CURVE):
+            return params[0], [result[0], result[1], result[2]]
+        elif (self.ptr.oclass == EGADS_FACE or
+              self.ptr.oclass == EGADS_SURFACE):
+            return [params[0], params[1]], [result[0], result[1], result[2]]
+        return None, None
+
     def getTolerance(self):
         '''
         Get the tolerance associated with this object

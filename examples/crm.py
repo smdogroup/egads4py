@@ -4,97 +4,100 @@ import sys
 from egads4py import egads
 from dcel import dcel
 
-def create_faces(ctx, X, frame_edges, direction):
+def create_faces(ctx, X, frame_edges, nodes=None, edges=None, faces=None):
     # Create the nodes
-    nodes = []
     nx = len(X)
     ne = len(frame_edges)
 
+    # Create the edges if not created already
+    if nodes is None:
+        nodes = 2*nx*[None]
+    if edges is None:
+        edges = (nx + 2*ne)*[None]
+    if faces is None:
+        faces = ne*[None]
+
     # Create the bottom nodes
     for i in range(nx):
-        oclass = egads.NODE
-        node = ctx.makeTopology(oclass, rdata=X[i])
-        nodes.append(node)
+        if nodes[i] is None:
+            oclass = egads.NODE
+            node = ctx.makeTopology(oclass, rdata=X[i,0])
+            nodes[i] = node
 
     # Create the top nodes
     for i in range(nx):
-        oclass = egads.NODE
-        x = X[i] + direction
-        node = ctx.makeTopology(oclass, rdata=x)
-        nodes.append(node)
-
-    # Edge list
-    edges = []
+        if nodes[i + nx] is None:
+            oclass = egads.NODE
+            node = ctx.makeTopology(oclass, rdata=X[i,1])
+            nodes[i + nx] = node
 
     # Create the bottom edges
-    for e in frame_edges:
-        d = X[e[1]] - X[e[0]] 
-        oclass = egads.CURVE
-        mtype = egads.LINE
-        line = ctx.makeGeometry(oclass, mtype, rdata=[X[e[0]], d])
-
-        topo_class = egads.EDGE
-        topo_type = egads.TWONODE
-        edge = ctx.makeTopology(topo_class, topo_type, geom=line,
-                                children=[nodes[e[0]], nodes[e[1]]],
-                                rdata=[0, np.sqrt(np.dot(d, d))])
-        edge.attributeAdd('name', egads.ATTRSTRING, 'bottom')
-        edges.append(edge)
+    for index, e in enumerate(frame_edges):
+        if edges[index] is None:
+            d = X[e[1],0] - X[e[0],0] 
+            oclass = egads.CURVE
+            mtype = egads.LINE
+            line = ctx.makeGeometry(oclass, mtype, rdata=[X[e[0],0], d])
+            
+            topo_class = egads.EDGE
+            topo_type = egads.TWONODE
+            edge = ctx.makeTopology(topo_class, topo_type, geom=line,
+                                    children=[nodes[e[0]], nodes[e[1]]],
+                                    rdata=[0, np.sqrt(np.dot(d, d))])
+            edge.attributeAdd('name', egads.ATTRSTRING, 'bottom')
+            edges[index] = edge
 
     # Create the top edges
-    for e in frame_edges:
-        x = X[e[0]] + direction
-        d = X[e[1]] - X[e[0]] 
-        oclass = egads.CURVE
-        mtype = egads.LINE
-        line = ctx.makeGeometry(oclass, mtype, rdata=[x, d])
+    for index, e in enumerate(frame_edges):
+        if edges[index + ne] is None:
+            d = X[e[1],1] - X[e[0],1] 
+            oclass = egads.CURVE
+            mtype = egads.LINE
+            line = ctx.makeGeometry(oclass, mtype, rdata=[X[e[0],1], d])
 
-        topo_class = egads.EDGE
-        topo_type = egads.TWONODE
-        edge = ctx.makeTopology(topo_class, topo_type, geom=line,
-                                children=[nodes[e[0]+nx], 
-                                          nodes[e[1]+nx]],
-                                rdata=[0, np.sqrt(np.dot(d, d))])
-        edge.attributeAdd('name', egads.ATTRSTRING, 'top')
-        edges.append(edge)
+            topo_class = egads.EDGE
+            topo_type = egads.TWONODE
+            edge = ctx.makeTopology(topo_class, topo_type, geom=line,
+                                    children=[nodes[e[0]+nx], 
+                                              nodes[e[1]+nx]],
+                                    rdata=[0, np.sqrt(np.dot(d, d))])
+            edge.attributeAdd('name', egads.ATTRSTRING, 'top')
+            edges[index + ne] = edge
 
     # Create the bottom to top edges
     for i in range(nx):
-        d = direction
-        oclass = egads.CURVE
-        mtype = egads.LINE
-        line = ctx.makeGeometry(oclass, mtype, rdata=[X[i], d])
+        if edges[i + 2*ne] is None:
+            d = X[i,1] - X[i,0]
+            oclass = egads.CURVE
+            mtype = egads.LINE
+            line = ctx.makeGeometry(oclass, mtype, rdata=[X[i,0], d])
 
-        topo_class = egads.EDGE
-        topo_type = egads.TWONODE
-        edge = ctx.makeTopology(topo_class, topo_type, geom=line,
-                                children=[nodes[i], nodes[nx+i]],
-                                rdata=[0, np.sqrt(np.dot(d, d))])
-        edges.append(edge)
+            topo_class = egads.EDGE
+            topo_type = egads.TWONODE
+            edge = ctx.makeTopology(topo_class, topo_type, geom=line,
+                                    children=[nodes[i], nodes[nx+i]],
+                                    rdata=[0, np.sqrt(np.dot(d, d))])
+            edges[i + 2*ne] = edge
 
     # Create the faces
-    faces = []
     for i, e in enumerate(frame_edges):
-        elist = [edges[i], edges[ne+i], 
-                 edges[2*ne+e[0]], edges[2*ne+e[1]]]
-        loop, nedge = ctx.makeLoop(elist)
-        face = ctx.makeFace(loop, mtype=egads.SFORWARD)
-        face.attributeAdd('name', egads.ATTRSTRING, 'box%d'%(i))
-        faces.append(face)
+        if faces[i] is None:
+            elist = [edges[i], edges[ne+i], 
+                     edges[2*ne+e[0]], edges[2*ne+e[1]]]
+            loop, nedge = ctx.makeLoop(elist)
+            face = ctx.makeFace(loop, mtype=egads.SFORWARD)
+            face.attributeAdd('name', egads.ATTRSTRING, 'box%d'%(i))
+            faces[i] = face
 
     return faces
 
-def create_crm_model(ctx, leList, teList, ribspars, 
-                     igesfile, surf_index, filename='ucrm.step'):
+def load_oml_model(ctx, leList, teList, igesfile, surf_index):
     # Load the model 
     crm = ctx.loadModel(igesfile)
 
     # Get the FACEBODIES from the iges file model and prepare 
     # to sew them together
     body_surfs = crm.getChildren()
-
-    # Keep track of the faces that should be in the final wing-box
-    wingbox_faces = []
 
     # Extract the faces 
     surf_faces = []
@@ -113,7 +116,7 @@ def create_crm_model(ctx, leList, teList, ribspars,
             tol *= np.sqrt(10)
     oml.saveModel('oml.step', overwrite=True)
 
-    # Now 'bodies' should be a single SHEETBODY
+    # Now 'oml' should be a single SHEETBODY
     body = oml.getChildren()[0]
 
     # Go through the edge list and find whether the edge is in front
@@ -162,6 +165,12 @@ def create_crm_model(ctx, leList, teList, ribspars,
 
         if types[0] == types[1]:
             edge.attributeAdd('name', egads.ATTRSTRING, types[0])
+
+    return body
+
+def create_crm_model(ctx, body, ribspars, filename='ucrm.step'):
+    # Keep track of the faces that should be in the final wing-box
+    wingbox_faces = []
 
     # Set the faces
     print 'Intersecting iges surface body...'
@@ -256,8 +265,9 @@ def compute_ribspar_edges(leList, teList, nrib1=5, nrib2=44):
     # Add all of the points
     x, edge_conn, face_conn, face_sense = d.get_connectivity()
     x = np.array(x, dtype=np.float)
-    X = np.zeros((x.shape[0], 3), dtype=np.float)
-    X[:,:2] = x[:]
+    X = np.zeros((x.shape[0], 2, 3), dtype=np.float)
+    X[:,0,:2] = x[:]
+    X[:,1,:2] = x[:]
     
     return X, edge_conn, face_conn, face_sense
 
@@ -282,26 +292,16 @@ leList = 25.4*np.array(leList)
 teList = 25.4*np.array(teList)
 
 # Create the ribs/spars
-X, edge_conn, face_conn, face_sense = compute_ribspar_edges(leList, teList)
+X, edge_conn, face_conn, face_sense = compute_ribspar_edges(leList, teList,
+                                                            nrib1=2, nrib2=2)
 X = np.array(X)
 
 # Set the z-locations
-X[:,2] = -50.0
-direction = np.array([0, 0, 250.0])
+X[:,0,2] = -50.0
+X[:,0,2] = 200.0
 
 # Create the egads context
 ctx = egads.context()
-
-# Create the faces, shell and body
-faces = create_faces(ctx, X, edge_conn, direction)
-shell = ctx.makeTopology(egads.SHELL, egads.OPEN,
-                         children=faces)
-body = ctx.makeTopology(egads.BODY, egads.SHEETBODY,
-                        children=[shell])
-
-# Save the rib/spar arrangement as a model
-model = ctx.makeTopology(egads.MODEL, children=[body])
-model.saveModel('ribspars.step', overwrite=True)
 
 # Parameters for the uCRM 13.5
 # igesfile = 'ucrm_13_5.iges'
@@ -310,6 +310,28 @@ model.saveModel('ribspars.step', overwrite=True)
 # Parameter for the CRM
 igesfile = 'final_surface.igs'
 surf_index = [0, 1, 2, 3, 5, 6]
+
+# Load the OML model
+oml_body = load_oml_model(ctx, leList, teList, igesfile, surf_index)
+
+# Create the rib nodes/edges...
+
+
+
+
+
+# Create the faces, shell and body
+faces = create_faces(ctx, X, edge_conn, nodes, edges, faces)
+
+# Create the shell/body objects
+shell = ctx.makeTopology(egads.SHELL, egads.OPEN,
+                         children=faces)
+body = ctx.makeTopology(egads.BODY, egads.SHEETBODY,
+                        children=[shell])
+
+# Save the rib/spar arrangement as a model
+model = ctx.makeTopology(egads.MODEL, children=[body])
+model.saveModel('ribspars.step', overwrite=True)
 
 # Create the CRM step file
 create_crm_model(ctx, leList, teList, body, igesfile, surf_index,
