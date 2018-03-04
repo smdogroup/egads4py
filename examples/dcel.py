@@ -93,7 +93,7 @@ class dcel:
                     self.edges[(u, v)] = edge(u, v)
                     self.edges[(u, v)].face = f
 
-                # Set the twins
+                # Set the twin if it exists
                 if (v, u) in self.edges:
                     self.edges[(v, u)].twin = self.edges[(u, v)]
                     self.edges[(u, v)].twin = self.edges[(v, u)]
@@ -123,6 +123,8 @@ class dcel:
         Retrieve a list of the edges
         '''
         edge_dict = {}
+
+        # Order the edges
         for e in self.edges:
             op = (e[1], e[0])
             if e not in edge_dict and op not in edge_dict:

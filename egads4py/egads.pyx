@@ -244,7 +244,6 @@ cdef class context:
             T[i] = xform[i]
         new = pyego(self)
         stat = EG_makeTransform(self.context, T, &new.ptr)
-        self.refs.append(new)
         if stat:
             _checkErr(stat)
 
@@ -326,11 +325,8 @@ cdef class context:
         new = pyego(self)
         stat = EG_makeGeometry(self.context, oclass, mtype, refptr,
                                iptr, rptr, &new.ptr)
-        self.refs.append(new)
         if stat:
             _checkErr(stat)
-        if geom is not None:
-            new.refs.append(geom)
         if len(ivec) > 0:
             free(iptr)
         if len(rvec) > 0:
@@ -438,13 +434,8 @@ cdef class context:
         stat = EG_makeTopology(self.context, refptr, oclass, mtype,
                                data, nchildren, childarray,
                                senses, &new.ptr)
-        self.refs.append(new)
         if stat:
             _checkErr(stat)
-        if children is not None:
-            new.refs.extend(children)
-        if geom is not None:
-            new.refs.append(geom)
         free(childarray)
         free(senses)
         return new
@@ -472,8 +463,9 @@ cdef class context:
         tolerance used for the operation (0.0 - use EDGE tolerances)
 
         returns:
-        the resultant LOOP Object the number of nonNULL entries in
-        edges when returned or error code
+        obj: the resultant LOOP Object
+        nedges: the number of non-None entries in edges when returned 
+        or error code
         '''
         cdef int nloop_edges = 0 
         cdef int nedges
@@ -490,8 +482,6 @@ cdef class context:
                 edgs[i] = (<pyego>edges[i]).ptr
         new = pyego(self)
         nloop_edges = EG_makeLoop(nedges, edgs, geoptr, toler, &new.ptr)
-        self.refs.append(new)
-        new.refs.extend(edges)
         for i in range(nedges):
             if edgs[i] == NULL:
                 edges[i] = None
@@ -502,7 +492,7 @@ cdef class context:
         '''
         Creates a simple FACE from a LOOP or a SURFACE. Also can be
         used to hollow a single LOOPed existing FACE. This function
-        creates any required NODEs, EDGEs and LOOPs.
+        screates any required NODEs, EDGEs and LOOPs.
 
         Parameters
         ----------
@@ -543,8 +533,6 @@ cdef class context:
 
         new = pyego(self)
         stat = EG_makeFace(obj.ptr, mtype, ptr, &new.ptr)
-        self.refs.append(new)
-        new.refs.append(obj)
         if stat and stat != EGADS_OUTSIDE:
             _checkErr(stat)
         return new
@@ -592,7 +580,6 @@ cdef class context:
 
         body = pyego(self)
         stat = EG_makeSolidBody(self.context, stype, rptr, &body.ptr)
-        self.refs.append(body)
         if rptr:
             free(rptr)
         return body
@@ -632,11 +619,9 @@ cdef class context:
                 objs[i] = (<pyego>objlist[i]).ptr
             new = pyego(self)
             stat = EG_sewFaces(nobj, objs, toler, flag, &new.ptr)
-            self.refs.append(new)
             if stat:
                 _checkErr(stat)
             free(objs)
-            new.refs.extend(objlist)
             return new
         return None
 
@@ -657,7 +642,6 @@ cdef class context:
             bflag = 2
         new = pyego(self)
         stat = EG_loadModel(self.context, bflag, filename, &new.ptr)
-        self.refs.append(new)
         if stat:
             _checkErr(stat)
         return new
@@ -718,7 +702,6 @@ cdef class context:
             rc2ptr = rc2          
         new = pyego(self)
         stat = EG_blend(nsec, secs, rc1ptr, rc2ptr, &new.ptr)
-        self.refs.append(new)
         if stat:
             _checkErr(stat)
         free(secs)
@@ -753,7 +736,6 @@ cdef class context:
             secs[i] = (<pyego>sections[i]).ptr
         new = pyego(self)
         stat = EG_ruled(nsec, secs, &new.ptr)
-        self.refs.append(new)
         free(secs)
         if stat:
             _checkErr(stat)
@@ -762,15 +744,13 @@ cdef class context:
 cdef class pyego:
     cdef ego ptr
     cdef context ctx
-    cdef list refs
     
     def __cinit__(self, context ctx):
         self.ctx = ctx
+        self.ctx.refs.append(self)
         self.ptr = NULL
-        self.refs = []
 
     def __dealloc__(self):
-        self.refs = []
         if self.ptr:
             EG_deleteObject(self.ptr)
         pass
@@ -849,7 +829,6 @@ cdef class pyego:
         cdef int stat
         new = pyego(self.ctx)
         stat = EG_copyObject(self.ptr, NULL, &new.ptr)
-        self.refs.append(new)
         if stat:
             _checkErr(stat)
         return new
@@ -869,7 +848,6 @@ cdef class pyego:
         cdef int stat
         flip = pyego(self.ctx)
         stat = EG_flipObject(self.ptr, &flip.ptr)
-        self.refs.append(flip)
         if stat:
             _checkErr(stat)
         return flip
@@ -1008,7 +986,6 @@ cdef class pyego:
         stat = EG_getBody(self.ptr, &body.ptr)
         if stat:
             _checkErr(stat)
-        self.refs.append(body)
         return body
 
     def getArea(self, limits=None):
@@ -1146,7 +1123,9 @@ cdef class pyego:
 
         stat = EG_attributeRet(self.ptr, name, &atype, &length,
                                &ints, &reals, &chars)
-        if stat:
+        if stat == EGADS_NOTFOUND:
+            return None
+        elif stat:
             _checkErr(stat)
 
         if atype == EGADS_ATTRINT:
@@ -1240,7 +1219,6 @@ cdef class pyego:
             lim = [limits[0], limits[1], limits[2], limits[3]]
         geo = pyego(self.ctx)
         geo.ptr = geom
-        self.refs.append(geo)
         return geo, oclass, mtype, lim, children, sens
 
     def getChildren(self):
@@ -1269,7 +1247,6 @@ cdef class pyego:
             c = pyego(self.ctx)
             c.ptr = childarray[i]
             children.append(c)
-        self.refs.extend(children)
         return children
 
     def getBodyTopos(self, int oclass, pyego ref=None):
@@ -1312,7 +1289,6 @@ cdef class pyego:
             t = pyego(self.ctx)
             t.ptr = topos[i]
             tlist.append(t)
-        self.refs.extend(tlist)
         free(topos)
         return tlist
 
@@ -1352,7 +1328,6 @@ cdef class pyego:
         cdef int stat
         new = pyego(self.ctx)
         stat = EG_solidBoolean(self.ptr, tool.ptr, oper, &new.ptr)
-        self.refs.extend(new)
         if stat:
             _checkErr(stat)
 
@@ -1388,7 +1363,6 @@ cdef class pyego:
         new = pyego(self.ctx)
         stat = EG_intersection(self.ptr, tool.ptr, &nobj, &faceEdgePairs, 
                                &new.ptr)
-        self.refs.append(new)
         if stat == EGADS_CONSTERR or nobj == 0:
             return None, []
         elif stat:
@@ -1401,7 +1375,6 @@ cdef class pyego:
             e = pyego(self.ctx)
             e.ptr = faceEdgePairs[2*i+1]
             pairs.append(e)
-        self.refs.extend(pairs)
         if faceEdgePairs:
             free(faceEdgePairs)
         return new, pairs 
@@ -1435,7 +1408,6 @@ cdef class pyego:
             objs[i] = (<pyego>pairs[i]).ptr
         new = pyego(self.ctx)
         stat = EG_imprintBody(self.ptr, nobj/2, objs, &new.ptr)
-        self.refs.append(new)
         free(objs)
         if stat:
             _checkErr(stat)
@@ -1467,7 +1439,6 @@ cdef class pyego:
         new = pyego(self.ctx)
         stat = EG_filletBody(self.ptr, nedges, edgs, radius, &new.ptr,
                              &facemap)
-        self.refs.append(new)
         free(edgs)
         free(facemap)
         if stat:
@@ -1498,7 +1469,6 @@ cdef class pyego:
             direction[i] = _dir[i]
         new = pyego(self.ctx)
         stat = EG_extrude(self.ptr, dist, direction, &new.ptr)
-        self.refs.append(new)
         if stat:
             _checkErr(stat)
         return new
@@ -1526,7 +1496,6 @@ cdef class pyego:
             axis[i] = _axis[i]
         new = pyego(self.ctx)
         stat = EG_rotate(self.ptr, angle, axis, &new.ptr)
-        self.refs.append(new)
         if stat:
             _checkErr(stat)
         return new
@@ -1549,7 +1518,6 @@ cdef class pyego:
         cdef int stat
         new = pyego(self.ctx)
         stat = EG_sweep(self.ptr, spline.ptr, mode, &new.ptr)
-        self.refs.append(new)
         if stat:
             _checkErr(stat)
         return new
