@@ -201,16 +201,16 @@ def create_crm_model(ctx, body, ribspars, filename='ucrm.step'):
         if has_top is False and has_bottom is False:
             wingbox_faces.append(face)
     
-    # # Sew the faces together
-    # print 'Sewing it all together...'
-    # oml = ctx.sewFaces(wingbox_faces, toler=1e-4, manifold=False)
-    # oml.saveModel(filename, overwrite=True)
-
-    # Create the model
-    shell = ctx.makeTopology(egads.SHELL, egads.OPEN, children=wingbox_faces)
-    body = ctx.makeTopology(egads.BODY, egads.SHEETBODY, children=[shell])
-    oml = ctx.makeTopology(egads.MODEL, children=[body])
+    # Sew the faces together
+    print 'Sewing it all together...'
+    oml = ctx.sewFaces(wingbox_faces, toler=1e-4, manifold=False)
     oml.saveModel(filename, overwrite=True)
+
+    # # Create the model
+    # shell = ctx.makeTopology(egads.SHELL, egads.OPEN, children=wingbox_faces)
+    # body = ctx.makeTopology(egads.BODY, egads.SHEETBODY, children=[shell])
+    # oml = ctx.makeTopology(egads.MODEL, children=[body])
+    # oml.saveModel(filename, overwrite=True)
 
     return
 
@@ -296,7 +296,8 @@ oml_body = load_oml_model(ctx, leList, teList, omlfile)
 xmin, xmax = oml_body.getBoundingBox()
 
 # Create the ribs/spars
-X, edge_conn, face_conn, face_sense = compute_ribspar_edges(leList, teList)
+X, edge_conn, face_conn, face_sense = compute_ribspar_edges(leList, teList, 
+    nrib1=2, nrib2=4)
 X = np.array(X)
 
 # Set the bounds on z so that they encompass the box

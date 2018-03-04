@@ -34,12 +34,12 @@ for s, e in zip(surf_index, edge_index):
 
 plt.figure()
 
-nctl = 20
+nctl = 25
 
 top_curves = []
 bottom_curves = []
 for k in range(0, len(edge_list), 2):
-    n = 50
+    n = 250
     r, p = edge_list[k].getRange()
     xi = r[0] + (r[1] - r[0])*(0.5*(1.0 - np.cos(np.pi*np.linspace(0, 1.0, n))))
     x1 = np.zeros((n, 3))
@@ -60,7 +60,6 @@ for k in range(0, len(edge_list), 2):
 
     interp = TMR.CurveInterpolation(x)
     interp.setNumControlPoints(nctl)
-
     curve = interp.createCurve(4)
 
     top, bottom = curve.split(0.5)
