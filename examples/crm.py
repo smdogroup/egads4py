@@ -4,7 +4,61 @@ import sys
 from egads4py import egads
 from dcel import dcel
 
-def create_faces(ctx, X, frame_edges, nodes=None, edges=None, faces=None):
+def create_ribspar_solid(ctx, x, zmin, zmax,
+                         frame_edges, frame_faces, frame_senses):
+    # Create the nodes
+    nx = len(x)
+    ne = len(frame_edges)
+
+    # Create the node locations
+    X = np.zeros((nx, 3))
+    X[:,:2] = x[:]
+    X[:,2] = zmin
+
+    # Compute the extrusion distance
+    dist = zmax - zmin
+    direction = np.array([0.0, 0.0, 1.0])
+
+    # Create the nodes
+    nodes = []
+    for i in range(nx):
+        oclass = egads.NODE
+        nodes.append(ctx.makeTopology(oclass, rdata=X[i]))
+
+    # Create the bottom edges
+    edges = []
+    for e in frame_edges:
+        d = X[e[1]] - X[e[0]] 
+        oclass = egads.CURVE
+        mtype = egads.LINE
+        line = ctx.makeGeometry(oclass, mtype, rdata=[X[e[0]], d])
+            
+        topo_class = egads.EDGE
+        topo_type = egads.TWONODE
+        edge = ctx.makeTopology(topo_class, topo_type, geom=line,
+                                children=[nodes[e[0]], nodes[e[1]]],
+                                rdata=[0, np.sqrt(np.dot(d, d))])
+        edge.attributeAdd('name', egads.ATTRSTRING, 'bottom')
+        edges.append(edge)
+
+    bodies = []
+    for f, sens in zip(frame_faces, frame_senses):
+        elist = []
+        for e in f:
+            elist.append(edges[e])
+        loop = ctx.makeTopology(egads.LOOP, egads.CLOSED, 
+                                children=elist, sens=sens)
+        mtype = egads.SFORWARD
+        face = ctx.makeFace(loop, mtype=mtype)
+        face.attributeAdd('name', egads.ATTRSTRING, 'box%d'%(i))
+        body = face.extrude(dist, direction)
+        bodies.append(body)
+
+    model = ctx.makeTopology(egads.MODEL, children=bodies)
+    return model
+
+def create_faces(ctx, X, frame_edges, 
+                 nodes=None, edges=None, faces=None):
     # Create the nodes
     nx = len(X)
     ne = len(frame_edges)
@@ -94,9 +148,15 @@ def create_faces(ctx, X, frame_edges, nodes=None, edges=None, faces=None):
 
     return faces
 
-def load_oml_model(ctx, leList, teList, omlfile):
+def load_oml_model(ctx, leList, teList, omlfile, igesfile=True):
     # Load the model from a step file
     crm = ctx.loadModel(omlfile)
+
+    if igesfile:
+        all_faces = []
+        for body in crm.getChildren():
+            all_faces.extend(body.getBodyTopos(egads.FACE))
+        crm = ctx.sewFaces(all_faces, toler=1e-4, manifold=False)
 
     # Get the SHELLBODY or FACEBODY from the model and prepare 
     # to sew them together
@@ -163,7 +223,7 @@ def create_crm_model(ctx, body, ribspars, filename='ucrm.step'):
     # Set the faces
     print 'Intersecting iges surface body...'
     wiremodel, body_pairs = body.intersection(ribspars)
-    if wirebody is not None:
+    if wiremodel is not None:
         print 'Impriting iges surface body...'
         new_body = body.imprintBody(body_pairs)
 
@@ -257,11 +317,8 @@ def compute_ribspar_edges(leList, teList, nrib1=5, nrib2=44):
         d.split_face(e.face, x[k], y[k], drib[0], drib[1])
 
     # Add all of the points
-    x, edge_conn, face_conn, face_sense = d.get_connectivity()
-    x = np.array(x, dtype=np.float)
-    X = np.zeros((x.shape[0], 2, 3), dtype=np.float)
-    X[:,0,:2] = x[:]
-    X[:,1,:2] = x[:]
+    X, edge_conn, face_conn, face_sense = d.get_connectivity()
+    X = np.array(X, dtype=np.float)
     
     return X, edge_conn, face_conn, face_sense
 
@@ -289,16 +346,29 @@ teList = 25.4*np.array(teList)
 ctx = egads.context()
 
 # Set the output file
-omlfile = 'ucrm_9_oml.step'
+omlfile = 'ucrm_9_oml.igs'
 
 # Load the OML model
 oml_body = load_oml_model(ctx, leList, teList, omlfile)
 xmin, xmax = oml_body.getBoundingBox()
 
 # Create the ribs/spars
-X, edge_conn, face_conn, face_sense = compute_ribspar_edges(leList, teList, 
-                                                            nrib1=5, nrib2=44)
-X = np.array(X)
+x, edge_conn, face_conn, face_sens = compute_ribspar_edges(leList, teList, 
+                                                           nrib1=5, nrib2=44)
+
+zmin = xmin[2]-1.0
+zmax = xmax[2]+1.0
+
+model = create_ribspar_solid(ctx, x, zmin, zmax,
+                             edge_conn, face_conn, face_sens)
+model.saveModel('ucrm_9_ribspar_solid.step', overwrite=True)
+
+exit(0)
+
+# Set up the top/bottom node locations
+X = np.zeros((x.shape[0], 2, 3), dtype=np.float)
+X[:,0,:2] = x[:]
+X[:,1,:2] = x[:]
 
 # Set the bounds on z so that they encompass the box
 X[:,0,2] = xmin[2]-0.1

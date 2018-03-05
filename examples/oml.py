@@ -69,42 +69,45 @@ bottom_lofter = TMR.CurveLofter(bottom_curves)
 bottom_surface = bottom_lofter.createSurface(2)
 
 # Create the egads top surface 
-ku, kv, tu, tv, w, X = top_surface.getData()
+ku, kv, top_tu, top_tv, w, X = top_surface.getData()
 oclass = egads.SURFACE
 mtype = egads.BSPLINE
 bitflag = 2
 udegree = ku-1
 vdegree = kv-1
-nuknots = len(tu)
-nvknots = len(tv)
-ncpu = (len(tu) - ku)
-ncpv = (len(tv) - kv)
+nuknots = len(top_tu)
+nvknots = len(top_tv)
+ncpu = (len(top_tu) - ku)
+ncpv = (len(top_tv) - kv)
 idata = [bitflag, 
          udegree, ncpu, nuknots, 
          vdegree, ncpv, nvknots]
-rdata = [tu, tv, X, w]
+rdata = [top_tu, top_tv, X, w]
 top_surf = ctx.makeGeometry(oclass, mtype, rdata=rdata, idata=idata)
-top_face = ctx.makeFace(top_surf, egads.SREVERSE, 
-                        rdata=[tu[0], tu[-1], tv[0], tv[-1]])
 
 # Create the egads bottom surface 
-ku, kv, tu, tv, w, X = bottom_surface.getData()
+ku, kv, bottom_tu, bottom_tv, w, X = bottom_surface.getData()
 oclass = egads.SURFACE
 mtype = egads.BSPLINE
 bitflag = 2
 udegree = ku-1
 vdegree = kv-1
-nuknots = len(tu)
-nvknots = len(tv)
-ncpu = (len(tu) - ku)
-ncpv = (len(tv) - kv)
+nuknots = len(bottom_tu)
+nvknots = len(bottom_tv)
+ncpu = (len(bottom_tu) - ku)
+ncpv = (len(bottom_tv) - kv)
 idata = [bitflag, 
          udegree, ncpu, nuknots, 
          vdegree, ncpv, nvknots]
-rdata = [tu, tv, X, w]
+rdata = [bottom_tu, bottom_tv, X, w]
 bottom_surf = ctx.makeGeometry(oclass, mtype, rdata=rdata, idata=idata)
+
+top_face = ctx.makeFace(top_surf, egads.SREVERSE, 
+                        rdata=[top_tu[0], top_tu[-1], 
+                               top_tv[0], top_tv[-1]])
 bottom_face = ctx.makeFace(bottom_surf, egads.SFORWARD, 
-                           rdata=[tu[0], tu[-1], tv[0], tv[-1]])
+                           rdata=[bottom_tu[0], bottom_tu[-1], 
+                                  bottom_tv[0], bottom_tv[-1]])
 
 # Sew the faces together
 model = ctx.sewFaces([top_face, bottom_face], toler=1e-3, manifold=False)
