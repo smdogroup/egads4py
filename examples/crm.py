@@ -162,14 +162,14 @@ def create_crm_model(ctx, body, ribspars, filename='ucrm.step'):
 
     # Set the faces
     print 'Intersecting iges surface body...'
-    wirebody, body_pairs = body.intersection(ribspars)
+    wiremodel, body_pairs = body.intersection(ribspars)
     if wirebody is not None:
         print 'Impriting iges surface body...'
         new_body = body.imprintBody(body_pairs)
 
     print 'Intersecting ribspar body...'
-    wirebody, ribspar_pairs = ribspars.intersection(body)
-    if wirebody is not None:
+    wiremodel, ribspar_pairs = ribspars.intersection(body)
+    if wiremodel is not None:
         print 'Imprinting ribspar body...'
         ribspars = ribspars.imprintBody(ribspar_pairs)
 
@@ -275,11 +275,11 @@ def compute_ribspar_edges(leList, teList, nrib1=5, nrib2=44):
 
 # Set the leading edge list and the trailing edge lists
 leList = [[26.4, 0.0],
-          [26.4, 3.0544008],
-          [46.19, 29.35]]
+          [26.4, 3.05],
+          [46.19, 29.0]]
 teList = [[32.32, 0.0],
-          [32.32, 3.0544008],
-          [46.87, 29.35]]
+          [32.32, 3.05],
+          [46.87, 29.0]]
 
 # Scale the positions
 leList = 25.4*np.array(leList)

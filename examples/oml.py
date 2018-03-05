@@ -77,7 +77,7 @@ bottom_surface = bottom_lofter.createSurface(2)
 ku, kv, tu, tv, w, X = top_surface.getData()
 oclass = egads.SURFACE
 mtype = egads.BSPLINE
-bitflag = 0
+bitflag = 2
 udegree = ku-1
 vdegree = kv-1
 nuknots = len(tu)
@@ -87,7 +87,7 @@ ncpv = (len(tv) - kv)
 idata = [bitflag, 
          udegree, ncpu, nuknots, 
          vdegree, ncpv, nvknots]
-rdata = [tu, tv, X]
+rdata = [tu, tv, X, w]
 top_surf = ctx.makeGeometry(oclass, mtype, rdata=rdata, idata=idata)
 top_face = ctx.makeFace(top_surf, egads.SREVERSE, 
                         rdata=[tu[0], tu[-1], tv[0], tv[-1]])
@@ -96,7 +96,7 @@ top_face = ctx.makeFace(top_surf, egads.SREVERSE,
 ku, kv, tu, tv, w, X = bottom_surface.getData()
 oclass = egads.SURFACE
 mtype = egads.BSPLINE
-bitflag = 0
+bitflag = 2
 udegree = ku-1
 vdegree = kv-1
 nuknots = len(tu)
@@ -106,7 +106,7 @@ ncpv = (len(tv) - kv)
 idata = [bitflag, 
          udegree, ncpu, nuknots, 
          vdegree, ncpv, nvknots]
-rdata = [tu, tv, X]
+rdata = [tu, tv, X, w]
 bottom_surf = ctx.makeGeometry(oclass, mtype, rdata=rdata, idata=idata)
 bottom_face = ctx.makeFace(bottom_surf, egads.SFORWARD, 
                            rdata=[tu[0], tu[-1], tv[0], tv[-1]])
