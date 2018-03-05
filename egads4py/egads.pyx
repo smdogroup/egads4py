@@ -1393,6 +1393,7 @@ cdef class pyego:
         stat = EG_solidBoolean(self.ptr, tool.ptr, oper, &new.ptr)
         if stat:
             _checkErr(stat)
+        return new
 
     def intersection(self, pyego tool):
         '''

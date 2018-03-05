@@ -1,6 +1,5 @@
 import numpy as np
 from tmr import TMR
-import matplotlib.pylab as plt
 from egads4py import egads
 
 # Read in the uCRM iges surfaces from final_surface.igs
@@ -32,8 +31,6 @@ for s, e in zip(surf_index, edge_index):
     # Get the edge
     edge_list.append(edge)    
 
-plt.figure()
-
 nctl = 25
 
 top_curves = []
@@ -55,8 +52,6 @@ for k in range(0, len(edge_list), 2):
 
     x = np.vstack((x1, x2))
     x[:,1] = yloc[k/2]
-
-    plt.plot(x[:,0], x[:,2])
 
     interp = TMR.CurveInterpolation(x)
     interp.setNumControlPoints(nctl)
@@ -116,4 +111,3 @@ model = ctx.sewFaces([top_face, bottom_face], toler=1e-3, manifold=False)
 
 # Write out the model
 model.saveModel('ucrm_9_oml.step', overwrite=True)
-plt.savefig('sections.pdf')

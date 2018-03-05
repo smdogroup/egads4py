@@ -297,7 +297,7 @@ xmin, xmax = oml_body.getBoundingBox()
 
 # Create the ribs/spars
 X, edge_conn, face_conn, face_sense = compute_ribspar_edges(leList, teList, 
-    nrib1=2, nrib2=4)
+                                                            nrib1=5, nrib2=44)
 X = np.array(X)
 
 # Set the bounds on z so that they encompass the box
