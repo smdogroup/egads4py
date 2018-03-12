@@ -1484,8 +1484,8 @@ cdef class pyego:
 
         Parameters
         ----------
-        edges: list of EDGE objects to fillet
-        radius:  the radius of the fillets created
+        edges:  list of EDGE objects to fillet
+        radius: the radius of the fillets created
 
         Returns
         -------

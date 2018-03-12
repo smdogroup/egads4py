@@ -278,12 +278,12 @@ cdef extern from "egads.h":
     int  EG_filletBody( const ego src, int nedge, const ego *edges, 
                         double radius,
                         ego *result, int **facemap )
-    # int  EG_chamferBody( const ego src, int nedge, const ego *edges, 
-    #                      const ego *faces, double dis1, double dis2, 
-    #                      ego *result, int **facemap )
-    # int  EG_hollowBody( const ego src, int nface, const ego *faces, 
-    #                     double offset, int join,
-    #                     ego *result, int **facemap )
+    int  EG_chamferBody( const ego src, int nedge, const ego *edges, 
+                         const ego *faces, double dis1, double dis2, 
+                         ego *result, int **facemap )
+    int  EG_hollowBody( const ego src, int nface, const ego *faces, 
+                        double offset, int join,
+                        ego *result, int **facemap )
     int  EG_extrude( const ego src, double dist, const double *dir, 
                      ego *result )
     int  EG_rotate( const ego src, double angle, const double *axis, 
