@@ -629,19 +629,20 @@ cdef class context:
             return new
         return None
 
-    def loadModel(self, str filename, split=False):
+    def loadModel(self, fname, split=False):
         '''
         Loads a MODEL object from a file
 
         Parameters
         ----------
-        filename:  the file name to load
+        fname:     the file name to load
         split:     split closed/periodic entries
 
         returns:   the MODEL object
         '''
         cdef int stat
         cdef int bflag = 1
+        cdef char *filename = egads_convert_to_chars(fname)
         if split:
             bflag = 2
         new = pyego(self)
@@ -798,11 +799,12 @@ cdef class pyego:
         oclass, mtype = self.getInfo()
         return oclass_str[oclass]
         
-    def saveModel(self, str filename, overwrite=False):
+    def saveModel(self, fname, overwrite=False):
         '''
         Saves the model based on the filename extension
         '''        
         cdef int stat
+        cdef char* filename = egads_convert_to_chars(fname)
         if overwrite and os.path.exists(filename):
             os.remove(filename)
         stat = EG_saveModel(self.ptr, filename)
@@ -1104,9 +1106,8 @@ cdef class pyego:
                 reals[i] = <double>data[i]
         elif atype == EGADS_ATTRSTRING:
             length = len(data)+1
-            bstr = data.encode()
-            chars = bstr
-                
+            chars = egads_convert_to_chars(data)
+
         stat = EG_attributeAdd(self.ptr, name, atype, length,
                                ints, reals, chars)
         if stat:

@@ -1,6 +1,11 @@
 # Import string stuff
 from libc.string cimport const_char
 
+cdef inline char* egads_convert_to_chars(s):
+   if isinstance(s, unicode):
+      s = (<unicode>s).encode('utf8')
+   return s
+
 cdef extern from "egadsErrors.h":
     enum:
         _EGADS_TESSTATE"EGADS_TESSTATE"
