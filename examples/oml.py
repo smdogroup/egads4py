@@ -24,12 +24,12 @@ for s, e in zip(surf_index, edge_index):
 
     # Get the edge loop
     loop = face.getChildren()[0]
-    
+
     # Get the edge
     edge = loop.getChildren()[e]
 
     # Get the edge
-    edge_list.append(edge)    
+    edge_list.append(edge)
 
 nctl = 25
 
@@ -61,56 +61,61 @@ for k in range(0, len(edge_list), 2):
     top_curves.append(top)
     bottom_curves.append(bottom)
 
-# Loft the curve
-top_lofter = TMR.CurveLofter(top_curves)
-top_surface = top_lofter.createSurface(2)
+face_list = []
 
-bottom_lofter = TMR.CurveLofter(bottom_curves)
-bottom_surface = bottom_lofter.createSurface(2)
+for k in range(3):
+    # Loft the curve
+    top_lofter = TMR.CurveLofter(top_curves[k:k+2])
+    top_surface = top_lofter.createSurface(2)
 
-# Create the egads top surface 
-ku, kv, top_tu, top_tv, w, X = top_surface.getData()
-oclass = egads.SURFACE
-mtype = egads.BSPLINE
-bitflag = 2
-udegree = ku-1
-vdegree = kv-1
-nuknots = len(top_tu)
-nvknots = len(top_tv)
-ncpu = (len(top_tu) - ku)
-ncpv = (len(top_tv) - kv)
-idata = [bitflag, 
-         udegree, ncpu, nuknots, 
-         vdegree, ncpv, nvknots]
-rdata = [top_tu, top_tv, X, w]
-top_surf = ctx.makeGeometry(oclass, mtype, rdata=rdata, idata=idata)
+    bottom_lofter = TMR.CurveLofter(bottom_curves[k:k+2])
+    bottom_surface = bottom_lofter.createSurface(2)
 
-# Create the egads bottom surface 
-ku, kv, bottom_tu, bottom_tv, w, X = bottom_surface.getData()
-oclass = egads.SURFACE
-mtype = egads.BSPLINE
-bitflag = 2
-udegree = ku-1
-vdegree = kv-1
-nuknots = len(bottom_tu)
-nvknots = len(bottom_tv)
-ncpu = (len(bottom_tu) - ku)
-ncpv = (len(bottom_tv) - kv)
-idata = [bitflag, 
-         udegree, ncpu, nuknots, 
-         vdegree, ncpv, nvknots]
-rdata = [bottom_tu, bottom_tv, X, w]
-bottom_surf = ctx.makeGeometry(oclass, mtype, rdata=rdata, idata=idata)
+    # Create the egads top surface
+    ku, kv, top_tu, top_tv, w, X = top_surface.getData()
+    oclass = egads.SURFACE
+    mtype = egads.BSPLINE
+    bitflag = 2
+    udegree = ku-1
+    vdegree = kv-1
+    nuknots = len(top_tu)
+    nvknots = len(top_tv)
+    ncpu = (len(top_tu) - ku)
+    ncpv = (len(top_tv) - kv)
+    idata = [bitflag,
+             udegree, ncpu, nuknots,
+             vdegree, ncpv, nvknots]
+    rdata = [top_tu, top_tv, X, w]
+    top_surf = ctx.makeGeometry(oclass, mtype, rdata=rdata, idata=idata)
 
-top_face = ctx.makeFace(top_surf, egads.SREVERSE, 
-                        rdata=[top_tu[0], top_tu[-1], 
-                               top_tv[0], top_tv[-1]])
-bottom_face = ctx.makeFace(bottom_surf, egads.SFORWARD, 
-                           rdata=[bottom_tu[0], bottom_tu[-1], 
-                                  bottom_tv[0], bottom_tv[-1]])
+    # Create the egads bottom surface
+    ku, kv, bottom_tu, bottom_tv, w, X = bottom_surface.getData()
+    oclass = egads.SURFACE
+    mtype = egads.BSPLINE
+    bitflag = 2
+    udegree = ku-1
+    vdegree = kv-1
+    nuknots = len(bottom_tu)
+    nvknots = len(bottom_tv)
+    ncpu = (len(bottom_tu) - ku)
+    ncpv = (len(bottom_tv) - kv)
+    idata = [bitflag,
+             udegree, ncpu, nuknots,
+             vdegree, ncpv, nvknots]
+    rdata = [bottom_tu, bottom_tv, X, w]
+    bottom_surf = ctx.makeGeometry(oclass, mtype, rdata=rdata, idata=idata)
+
+    top_face = ctx.makeFace(top_surf, egads.SREVERSE,
+                            rdata=[top_tu[0], top_tu[-1],
+                                   top_tv[0], top_tv[-1]])
+    bottom_face = ctx.makeFace(bottom_surf, egads.SFORWARD,
+                               rdata=[bottom_tu[0], bottom_tu[-1],
+                                      bottom_tv[0], bottom_tv[-1]])
+
+    face_list.extend([top_face, bottom_face])
 
 # Sew the faces together
-model = ctx.sewFaces([top_face, bottom_face], toler=1e-3, manifold=False)
+model = ctx.sewFaces(face_list, toler=1e-3, manifold=False)
 
 # Write out the model
 model.saveModel('ucrm_9_oml.step', overwrite=True)
