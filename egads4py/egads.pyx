@@ -234,7 +234,7 @@ cdef class context:
 
     def __dealloc__(self):
         cdef int stat
-        self.refs = []
+        self.refs = None
         stat = EG_close(self.context)
         if stat:
             _checkErr(stat)
@@ -759,7 +759,7 @@ cdef class pyego:
     def __dealloc__(self):
         if self.ptr:
             EG_deleteObject(self.ptr)
-        pass
+        return
 
     def isSame(self, pyego obj):
         '''
@@ -1315,6 +1315,7 @@ cdef class pyego:
             _checkErr(stat)
         children = []
         for i in range(nchildren):
+            EG_referenceObject(childarray[i], self.ctx.context)
             c = pyego(self.ctx)
             c.ptr = childarray[i]
             children.append(c)
@@ -1357,6 +1358,7 @@ cdef class pyego:
             _checkErr(stat)
         tlist = []
         for i in range(ntopos):
+            EG_referenceObject(topos[i], self.ctx.context)
             t = pyego(self.ctx)
             t.ptr = topos[i]
             tlist.append(t)
@@ -1441,9 +1443,12 @@ cdef class pyego:
             _checkErr(stat)
         pairs = []
         for i in range(nobj):
+            EG_referenceObject(faceEdgePairs[2*i], self.ctx.context)
             f = pyego(self.ctx)
             f.ptr = faceEdgePairs[2*i]
             pairs.append(f)
+
+            EG_referenceObject(faceEdgePairs[2*i+1], self.ctx.context)
             e = pyego(self.ctx)
             e.ptr = faceEdgePairs[2*i+1]
             pairs.append(e)

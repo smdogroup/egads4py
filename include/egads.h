@@ -44,6 +44,8 @@ __ProtoExt__ int  EG_loadModel( ego context, int bflg, const char *name,
                                 ego *model );
 __ProtoExt__ int  EG_saveModel( const ego model, const char *name );
 __ProtoExt__ int  EG_deleteObject( ego object );
+__ProtoExt__ int  EG_referenceObject( ego object, const ego context );
+__ProtoExt__ int  EG_dereferenceObject( ego object, const ego context );
 __ProtoExt__ int  EG_makeTransform( ego context, const double *xform, 
                                     ego *oform );
 __ProtoExt__ int  EG_getTransformation( const ego oform, double *xform );

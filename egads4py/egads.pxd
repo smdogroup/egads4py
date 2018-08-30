@@ -145,6 +145,8 @@ cdef extern from "egads.h":
                        ego *model )
     int  EG_saveModel( const ego model, const char *name )
     int  EG_deleteObject( ego object )
+    int  EG_referenceObject( ego object, const ego context )
+    int  EG_dereferenceObject( ego object, const ego context )
     int  EG_makeTransform( ego context, const double *xform, 
                            ego *oform )
     int  EG_getTransformation( const ego oform, double *xform )

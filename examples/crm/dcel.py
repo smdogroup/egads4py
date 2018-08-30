@@ -43,7 +43,7 @@ class face:
         return True
 
 class edge:
-    def __init__(self, u, v):
+    def __init__(self, u, v, name):
         self.u = u
         self.v = v
         self.face = None
@@ -54,8 +54,11 @@ class edge:
         self.next = None
         self.prev = None
 
+        # Name the edge
+        self.name = name
+
 class dcel:
-    def __init__(self, X, conn):
+    def __init__(self, X, conn, names=None):
         '''
         Initialize the DCEL from points and a list of polygons
         '''
@@ -71,8 +74,11 @@ class dcel:
         # Dictionary hashed on (u, v)
         self.edges = {}
 
+        if names is None:
+            names = [None]*len(conn)
+
         # Loop over all of the input polygons
-        for p in conn:
+        for p, name in zip(conn, names):
             # Look for the edges
             p.append(p[0])
 
@@ -89,7 +95,7 @@ class dcel:
 
                 # Set the key for the owned edge
                 if (u, v) not in self.edges:
-                    self.edges[(u, v)] = edge(u, v)
+                    self.edges[(u, v)] = edge(u, v, name)
                     self.edges[(u, v)].face = f
 
                 # Set the twin if it exists
@@ -233,8 +239,8 @@ class dcel:
         if (u, v) in self.edges:
             # Add the edges (u, w) and (w, v)
             orig = self.edges[(u, v)]
-            a1 = edge(u, w)
-            a2 = edge(w, v)
+            a1 = edge(u, w, orig.name)
+            a2 = edge(w, v, orig.name)
             a1.face = orig.face
             a1.prev = orig.prev
             a1.next = a2
@@ -258,8 +264,8 @@ class dcel:
         if (v, u) in self.edges:
             # Add the edges (u, w) and (w, v)
             orig = self.edges[(v, u)]
-            b1 = edge(v, w)
-            b2 = edge(w, u)
+            b1 = edge(v, w, orig.name)
+            b2 = edge(w, u, orig.name)
             b1.face = orig.face
             b1.prev = orig.prev
             b1.next = b2
@@ -288,7 +294,7 @@ class dcel:
 
         return w
 
-    def add_edge_from_face(self, f, u, v):
+    def add_edge_from_face(self, f, u, v, name=None):
         '''
         Split a face shared by the
         '''
@@ -317,8 +323,8 @@ class dcel:
             return
 
         f2 = face()
-        a = edge(e1.v, e2.v)
-        b = edge(e2.v, e1.v)
+        a = edge(e1.v, e2.v, name)
+        b = edge(e2.v, e1.v, name)
 
         # Set the edge
         f.edge = a
