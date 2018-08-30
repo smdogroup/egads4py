@@ -2,7 +2,6 @@
 Implementation of a DECL data structure
 '''
 import numpy as np
-import matplotlib.pylab as plt
 
 def orient2d(self, ax, ay, bx, by, cx, cy):
     '''Check the relative orientation of the points a, b, and pt'''
@@ -25,7 +24,7 @@ class face:
         while True:
             u = next.u
             v = next.v
-            check = oriend2d(X[u][0], X[u][1], 
+            check = oriend2d(X[u][0], X[u][1],
                              X[v][0], X[v][1],
                              px, py)
 
@@ -49,7 +48,7 @@ class edge:
         self.v = v
         self.face = None
 
-        # Pointer to the twin (opposite) edge, next 
+        # Pointer to the twin (opposite) edge, next
         # and previous edge
         self.twin = None
         self.next = None
@@ -87,7 +86,7 @@ class dcel:
             for i in range(len(p)-1):
                 u = p[i]
                 v = p[i+1]
-            
+
                 # Set the key for the owned edge
                 if (u, v) not in self.edges:
                     self.edges[(u, v)] = edge(u, v)
@@ -101,7 +100,7 @@ class dcel:
                 # Set the previous/next pointer
                 if prev is not None:
                     self.edges[(u, v)].prev = self.edges[prev]
-                    self.edges[prev].next = self.edges[(u, v)] 
+                    self.edges[prev].next = self.edges[(u, v)]
 
                 # Set the first pair and the previous pairs
                 if first is None:
@@ -110,7 +109,7 @@ class dcel:
 
             if first is not None:
                 self.edges[first].prev = self.edges[prev]
-                self.edges[prev].next = self.edges[first] 
+                self.edges[prev].next = self.edges[first]
 
             # Set the one edge in the face
             f.edge = self.edges[first]
@@ -142,7 +141,7 @@ class dcel:
         for f in self.faces:
             fl = []
             sl = []
-            
+
             e = f.edge
             ef = (e.u, e.v)
             er = (e.v, e.u)
@@ -202,10 +201,10 @@ class dcel:
 
             proj = (ax*dx + ay*dy)*inv*inv
             if proj > 1.0:
-                dist = np.sqrt((px - self.verts[v][0])**2 + 
+                dist = np.sqrt((px - self.verts[v][0])**2 +
                                (py - self.verts[v][1])**2)
             elif proj < 0.0:
-                dist = np.sqrt((px - self.verts[u][0])**2 + 
+                dist = np.sqrt((px - self.verts[u][0])**2 +
                                (py - self.verts[u][1])**2)
             else:
                 dist = np.fabs((ax*nx + ay*ny)*inv)
@@ -215,7 +214,7 @@ class dcel:
                 min_dist = 1.0*dist
 
         return self.edges[closest], min_dist
-    
+
     def add_vertex(self, e, px, py):
         '''
         Add a vertex along the given edge at the given point
@@ -291,7 +290,7 @@ class dcel:
 
     def add_edge_from_face(self, f, u, v):
         '''
-        Split a face shared by the 
+        Split a face shared by the
         '''
         e1 = None
         e2 = None
@@ -321,9 +320,9 @@ class dcel:
         a = edge(e1.v, e2.v)
         b = edge(e2.v, e1.v)
 
-        # Set the 
+        # Set the edge
         f.edge = a
-        
+
         # Set the pointers in the first edge
         a.face = f
         a.prev = e1
@@ -437,6 +436,8 @@ class dcel:
 
     def plot(self):
         '''Plot the DCEL'''
+        import matplotlib.pylab as plt
+
         plt.figure()
         for f in self.faces:
             e = f.edge
@@ -447,13 +448,15 @@ class dcel:
                 x.append(self.verts[e.v][0])
                 y.append(self.verts[e.v][1])
                 e = e.next
-                
+
             plt.plot(x, y, '-o')
 
         plt.axis('equal')
         return
 
 if __name__ == '__main__':
+    import matplotlib.pylab as plt
+
     X = [[0, 0], [1, 0], [2, 0],
          [0.5, 1], [1.5, 1], [2.5, 1],
          [0.5, 2], [2, 2]]

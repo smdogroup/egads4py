@@ -234,11 +234,11 @@ def create_crm_model(ctx, body, ribspars, filename='ucrm.step'):
     # Go through and discard surfaces not cut by bodies
     for face in new_body.getBodyTopos(egads.FACE):
         add_edge = True
-        # for edge in new_body.getBodyTopos(egads.EDGE, ref=face):
-        #     if 'leading' == edge.attributeRet('name'):
-        #         add_edge = False
-        #     elif 'trailing' == edge.attributeRet('name'):
-        #         add_edge = False
+        for edge in new_body.getBodyTopos(egads.EDGE, ref=face):
+            if 'leading' == edge.attributeRet('name'):
+                add_edge = False
+            elif 'trailing' == edge.attributeRet('name'):
+                add_edge = False
         if add_edge:
             wingbox_faces.append(face)
 
@@ -247,14 +247,14 @@ def create_crm_model(ctx, body, ribspars, filename='ucrm.step'):
     for face in ribspars.getBodyTopos(egads.FACE):
         has_top = False
         has_bottom = False
-        # for edge in ribspars.getBodyTopos(egads.EDGE, ref=face):
-        #     # Find the edge created by the intersection and compare
-        #     # the face name to see if it is cut by both the top
-        #     # and bottom surfaces
-        #     if 'top' == edge.attributeRet('name'):
-        #         has_top = True
-        #     elif 'bottom' == edge.attributeRet('name'):
-        #         has_bottom = True
+        for edge in ribspars.getBodyTopos(egads.EDGE, ref=face):
+            # Find the edge created by the intersection and compare
+            # the face name to see if it is cut by both the top
+            # and bottom surfaces
+            if 'top' == edge.attributeRet('name'):
+                has_top = True
+            elif 'bottom' == edge.attributeRet('name'):
+                has_bottom = True
 
         if has_top is False and has_bottom is False:
             wingbox_faces.append(face)
@@ -308,8 +308,15 @@ def compute_ribspar_edges(leList, teList, nrib1=5, nrib2=44):
         e, dist = d.find_closest_edge(x, y[k])
         d.split_face(e.face, x, y[k], droot[0], droot[1])
 
-    x = np.linspace(leList[1,0], leList[2,0], nrib2)
-    y = np.linspace(leList[1,1], leList[2,1], nrib2)
+    # Mid-location for the rear spar
+    ymid = 276.5
+    nsplit = 13
+    y = np.zeros(nrib2)
+    y[:nsplit] = np.linspace(leList[1,1], ymid, nsplit)
+    y[nsplit-1:] = np.linspace(ymid, leList[2,1], nrib2-nsplit+1)
+
+    u = (y - y[0])/(y[-1] - y[0])
+    x = (1.0 - u)*leList[1,0] + u*leList[2,0]
     for k in range(1, nrib2-1):
         e, dist = d.find_closest_edge(x[k], y[k])
         d.split_face(e.face, x[k], y[k], drib[0], drib[1])
@@ -321,12 +328,12 @@ def compute_ribspar_edges(leList, teList, nrib1=5, nrib2=44):
     return X, edge_conn, face_conn, face_sense
 
 # Scale the positions
-leList = np.array([[ 670.56 ,    0.0],
-                   [ 670.56 ,   77.5],
-                   [1173.226,  736.6]])
-teList = np.array([[ 820.928,    0.0],
-                   [ 820.928,   77.5],
-                   [1190.498,  736.6]])
+leList = np.array([[ 670.5 ,    0.0],
+                   [ 670.5 ,   77.5],
+                   [1173.25,  745.0]])
+teList = np.array([[ 821.0,    0.0],
+                   [ 821.0,   77.5],
+                   [1190.5,  745.0]])
 
 # Create the egads context
 ctx = egads.context()
@@ -342,7 +349,7 @@ xmin =  [585.85756019888, -1e-07, 61.125292676213]
 
 # Create the ribs/spars
 x, edge_conn, face_conn, face_sens = compute_ribspar_edges(leList, teList,
-                                                           nrib1=5, nrib2=44)
+                                                           nrib1=5, nrib2=43)
 
 # Set up the top/bottom node locations
 X = np.zeros((x.shape[0], 2, 3), dtype=np.float)
@@ -366,4 +373,4 @@ ribspar_body = ctx.makeTopology(egads.BODY, egads.SHEETBODY,
 ribspar_model = ctx.makeTopology(egads.MODEL, children=[ribspar_body])
 ribspar_model.saveModel('ucrm_9_ribspars.step', overwrite=True)
 
-create_crm_model(ctx, oml_model, ribspar_body, filename='ucrm.step')
+create_crm_model(ctx, oml_model, ribspar_body, filename='ucrm_9_model.step')
