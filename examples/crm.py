@@ -234,11 +234,11 @@ def create_crm_model(ctx, body, ribspars, filename='ucrm.step'):
     # Go through and discard surfaces not cut by bodies
     for face in new_body.getBodyTopos(egads.FACE):
         add_edge = True
-        for edge in new_body.getBodyTopos(egads.EDGE, ref=face):
-            if 'leading' == edge.attributeRet('name'):
-                add_edge = False
-            elif 'trailing' == edge.attributeRet('name'):
-                add_edge = False
+        # for edge in new_body.getBodyTopos(egads.EDGE, ref=face):
+        #     if 'leading' == edge.attributeRet('name'):
+        #         add_edge = False
+        #     elif 'trailing' == edge.attributeRet('name'):
+        #         add_edge = False
         if add_edge:
             wingbox_faces.append(face)
 
@@ -247,14 +247,14 @@ def create_crm_model(ctx, body, ribspars, filename='ucrm.step'):
     for face in ribspars.getBodyTopos(egads.FACE):
         has_top = False
         has_bottom = False
-        for edge in ribspars.getBodyTopos(egads.EDGE, ref=face):
-            # Find the edge created by the intersection and compare
-            # the face name to see if it is cut by both the top
-            # and bottom surfaces
-            if 'top' == edge.attributeRet('name'):
-                has_top = True
-            elif 'bottom' == edge.attributeRet('name'):
-                has_bottom = True
+        # for edge in ribspars.getBodyTopos(egads.EDGE, ref=face):
+        #     # Find the edge created by the intersection and compare
+        #     # the face name to see if it is cut by both the top
+        #     # and bottom surfaces
+        #     if 'top' == edge.attributeRet('name'):
+        #         has_top = True
+        #     elif 'bottom' == edge.attributeRet('name'):
+        #         has_bottom = True
 
         if has_top is False and has_bottom is False:
             wingbox_faces.append(face)
@@ -335,10 +335,7 @@ ctx = egads.context()
 omlfile = 'ucrm_9_oml.step'
 
 # Load the OML model
-# oml_model = load_oml_model(ctx, leList, teList, omlfile, igesfile=False)
-# xmin, xmax = oml_model.getBoundingBox()
-# print('xmax = ', xmax)
-# print('xmin = ', xmin)
+oml_model = load_oml_model(ctx, leList, teList, omlfile, igesfile=False)
 
 xmax =  [1216.429987118, 748.0000001, 125.16753881385]
 xmin =  [585.85756019888, -1e-07, 61.125292676213]
@@ -368,3 +365,5 @@ ribspar_body = ctx.makeTopology(egads.BODY, egads.SHEETBODY,
 # Save the model
 ribspar_model = ctx.makeTopology(egads.MODEL, children=[ribspar_body])
 ribspar_model.saveModel('ucrm_9_ribspars.step', overwrite=True)
+
+create_crm_model(ctx, oml_model, ribspar_body, filename='ucrm.step')

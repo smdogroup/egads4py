@@ -1,9 +1,11 @@
+from __future__ import print_function, division
 import numpy as np
 from tmr import TMR
 from egads4py import egads
 
 # Read in the uCRM iges surfaces from final_surface.igs
 ctx = egads.context()
+filename = 'final_surface.igs'
 oml = ctx.loadModel('final_surface.igs')
 
 # Get the bodies and find the edge loops that are
@@ -51,7 +53,7 @@ for k in range(0, len(edge_list), 2):
         x2[i], xt, xtt = edge_list[k+1].evaluate(xi[i])
 
     x = np.vstack((x1, x2))
-    x[:,1] = yloc[k/2]
+    x[:,1] = yloc[k//2]
 
     interp = TMR.CurveInterpolation(x)
     interp.setNumControlPoints(nctl)
@@ -61,18 +63,21 @@ for k in range(0, len(edge_list), 2):
     top_curves.append(top)
     bottom_curves.append(bottom)
 
+# Loft the curves
+top_lofter = TMR.CurveLofter(top_curves)
+top_surface = top_lofter.createSurface(2)
+
+bottom_lofter = TMR.CurveLofter(bottom_curves)
+bottom_surface = bottom_lofter.createSurface(2)
+
 face_list = []
 
+ku, kv, top_tu, ttv, wt, Xt = top_surface.getData()
+ku, kv, bottom_tu, btv, wb, Xb = bottom_surface.getData()
+
 for k in range(3):
-    # Loft the curve
-    top_lofter = TMR.CurveLofter(top_curves[k:k+2])
-    top_surface = top_lofter.createSurface(2)
-
-    bottom_lofter = TMR.CurveLofter(bottom_curves[k:k+2])
-    bottom_surface = bottom_lofter.createSurface(2)
-
     # Create the egads top surface
-    ku, kv, top_tu, top_tv, w, X = top_surface.getData()
+    top_tv = [ttv[k+1], ttv[k+1], ttv[k+2], ttv[k+2]]
     oclass = egads.SURFACE
     mtype = egads.BSPLINE
     bitflag = 2
@@ -85,11 +90,13 @@ for k in range(3):
     idata = [bitflag,
              udegree, ncpu, nuknots,
              vdegree, ncpv, nvknots]
+    w = wt[ncpu*k:ncpu*(k+2)]
+    X = Xt[ncpu*k:ncpu*(k+2)]
     rdata = [top_tu, top_tv, X, w]
     top_surf = ctx.makeGeometry(oclass, mtype, rdata=rdata, idata=idata)
 
     # Create the egads bottom surface
-    ku, kv, bottom_tu, bottom_tv, w, X = bottom_surface.getData()
+    bottom_tv = [btv[k+1], btv[k+1], btv[k+2], btv[k+2]]
     oclass = egads.SURFACE
     mtype = egads.BSPLINE
     bitflag = 2
@@ -102,6 +109,8 @@ for k in range(3):
     idata = [bitflag,
              udegree, ncpu, nuknots,
              vdegree, ncpv, nvknots]
+    w = wb[ncpu*k:ncpu*(k+2)]
+    X = Xb[ncpu*k:ncpu*(k+2)]
     rdata = [bottom_tu, bottom_tv, X, w]
     bottom_surf = ctx.makeGeometry(oclass, mtype, rdata=rdata, idata=idata)
 
