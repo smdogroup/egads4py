@@ -5,58 +5,6 @@ import sys
 from egads4py import egads
 from dcel import dcel
 
-def create_ribspar_solid(ctx, x, zmin, zmax,
-                         frame_edges, frame_faces, frame_senses):
-    # Create the nodes
-    nx = len(x)
-    ne = len(frame_edges)
-
-    # Create the node locations
-    X = np.zeros((nx, 3))
-    X[:,:2] = x[:]
-    X[:,2] = zmin
-
-    # Compute the extrusion distance
-    dist = zmax - zmin
-    direction = np.array([0.0, 0.0, 1.0])
-
-    # Create the nodes
-    nodes = []
-    for i in range(nx):
-        oclass = egads.NODE
-        nodes.append(ctx.makeTopology(oclass, rdata=X[i]))
-
-    # Create the bottom edges
-    edges = []
-    for e in frame_edges:
-        d = X[e[1]] - X[e[0]]
-        oclass = egads.CURVE
-        mtype = egads.LINE
-        line = ctx.makeGeometry(oclass, mtype, rdata=[X[e[0]], d])
-
-        topo_class = egads.EDGE
-        topo_type = egads.TWONODE
-        edge = ctx.makeTopology(topo_class, topo_type, geom=line,
-                                children=[nodes[e[0]], nodes[e[1]]],
-                                rdata=[0, np.sqrt(np.dot(d, d))])
-        edge.attributeAdd('name', egads.ATTRSTRING, 'bottom')
-        edges.append(edge)
-
-    bodies = []
-    for f, sens in zip(frame_faces, frame_senses):
-        elist = []
-        for e in f:
-            elist.append(edges[e])
-        loop = ctx.makeTopology(egads.LOOP, egads.CLOSED,
-                                children=elist, sens=sens)
-        mtype = egads.SFORWARD
-        face = ctx.makeFace(loop, mtype=mtype)
-        face.attributeAdd('name', egads.ATTRSTRING, 'box%d'%(i))
-        body = face.extrude(dist, direction)
-        bodies.append(body)
-
-    return bodies
-
 def create_faces(ctx, X, frame_edges,
                  nodes=None, edges=None, faces=None):
     # Create the nodes
