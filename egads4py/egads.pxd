@@ -1,10 +1,21 @@
 # Import string stuff
 from libc.string cimport const_char
 
+# Import the python version information
+from cpython.version cimport PY_MAJOR_VERSION
+
 cdef inline char* egads_convert_to_chars(s):
-   if isinstance(s, unicode):
-      s = (<unicode>s).encode('utf8')
-   return s
+    if isinstance(s, unicode):
+        s = (<unicode>s).encode('utf-8')
+    return s
+
+cdef inline str egads_convert_chars_to_str(const char* s):
+    if s == NULL:
+        return None
+    elif PY_MAJOR_VERSION >= 3:
+        return s.decode('utf-8')
+    else:
+        return str(s)
 
 cdef extern from "egadsErrors.h":
     enum:
@@ -134,6 +145,8 @@ cdef extern from "egads.h":
                        ego *model )
     int  EG_saveModel( const ego model, const char *name )
     int  EG_deleteObject( ego object )
+    int  EG_referenceObject( ego object, const ego context )
+    int  EG_dereferenceObject( ego object, const ego context )
     int  EG_makeTransform( ego context, const double *xform, 
                            ego *oform )
     int  EG_getTransformation( const ego oform, double *xform )

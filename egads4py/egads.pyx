@@ -234,7 +234,7 @@ cdef class context:
 
     def __dealloc__(self):
         cdef int stat
-        self.refs = []
+        self.refs = None
         stat = EG_close(self.context)
         if stat:
             _checkErr(stat)
@@ -642,10 +642,11 @@ cdef class context:
         '''
         cdef int stat
         cdef int bflag = 1
-        cdef char *filename = egads_convert_to_chars(fname)
+        cdef char *filename = NULL
         if split:
             bflag = 2
         new = pyego(self)
+        filename = egads_convert_to_chars(fname)
         stat = EG_loadModel(self.context, bflag, filename, &new.ptr)
         if stat:
             _checkErr(stat)
@@ -758,7 +759,7 @@ cdef class pyego:
     def __dealloc__(self):
         if self.ptr:
             EG_deleteObject(self.ptr)
-        pass
+        return
 
     def isSame(self, pyego obj):
         '''
@@ -1068,7 +1069,7 @@ cdef class pyego:
         stat = EG_getArea(self.ptr, lim, &area)
         return area
 
-    def attributeAdd(self, str name, int atype, data):
+    def attributeAdd(self, aname, int atype, data):
         '''
         Adds an attribute to the object. If an attribute exists with
         the name it is overwritten with the new information.
@@ -1093,6 +1094,7 @@ cdef class pyego:
         cdef double *reals = NULL
         cdef char *chars = NULL
         cdef bytes bstr
+        cdef char *name = NULL
 
         if atype == EGADS_ATTRINT:
             length = len(data)
@@ -1108,6 +1110,7 @@ cdef class pyego:
             length = len(data)+1
             chars = egads_convert_to_chars(data)
 
+        name = egads_convert_to_chars(aname)
         stat = EG_attributeAdd(self.ptr, name, atype, length,
                                ints, reals, chars)
         if stat:
@@ -1118,13 +1121,15 @@ cdef class pyego:
             free(reals)
         return
 
-    def attributeDel(self, str name=None):
+    def attributeDel(self, aname=None):
         '''
         Deletes an attribute from the object. If the name is NULL then
         all attributes are removed from this object
         '''
         cdef int stat
+        cdef char *name = NULL
         if name is not None:
+            name = egads_convert_to_chars(aname)
             stat = EG_attributeDel(self.ptr, name)
         else:
             stat = EG_attributeDel(self.ptr, NULL)
@@ -1171,10 +1176,11 @@ cdef class pyego:
                 res.append(reals[i])
             return name, res
         elif atype == EGADS_ATTRSTRING:
-            return name, chars
+            return egads_convert_chars_to_str(name),\
+                egads_convert_chars_to_str(chars)
         return None
 
-    def attributeRet(self, str name):
+    def attributeRet(self, aname):
         '''
         Retrieves a specific attribute from the object
         '''
@@ -1184,6 +1190,7 @@ cdef class pyego:
         cdef const int *ints
         cdef const double *reals
         cdef const char *chars
+        cdef char *name = egads_convert_to_chars(aname)
 
         stat = EG_attributeRet(self.ptr, name, &atype, &length,
                                &ints, &reals, &chars)
@@ -1203,7 +1210,7 @@ cdef class pyego:
                 res.append(reals[i])
             return res
         elif atype == EGADS_ATTRSTRING:
-            return chars
+            return egads_convert_chars_to_str(chars)
         return None
         
     def attributeDup(self, pyego dup):
@@ -1308,6 +1315,7 @@ cdef class pyego:
             _checkErr(stat)
         children = []
         for i in range(nchildren):
+            EG_referenceObject(childarray[i], self.ctx.context)
             c = pyego(self.ctx)
             c.ptr = childarray[i]
             children.append(c)
@@ -1350,6 +1358,7 @@ cdef class pyego:
             _checkErr(stat)
         tlist = []
         for i in range(ntopos):
+            EG_referenceObject(topos[i], self.ctx.context)
             t = pyego(self.ctx)
             t.ptr = topos[i]
             tlist.append(t)
@@ -1434,9 +1443,12 @@ cdef class pyego:
             _checkErr(stat)
         pairs = []
         for i in range(nobj):
+            EG_referenceObject(faceEdgePairs[2*i], self.ctx.context)
             f = pyego(self.ctx)
             f.ptr = faceEdgePairs[2*i]
             pairs.append(f)
+
+            EG_referenceObject(faceEdgePairs[2*i+1], self.ctx.context)
             e = pyego(self.ctx)
             e.ptr = faceEdgePairs[2*i+1]
             pairs.append(e)
@@ -1586,3 +1598,4 @@ cdef class pyego:
         if stat:
             _checkErr(stat)
         return new
+
