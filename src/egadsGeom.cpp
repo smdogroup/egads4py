@@ -2302,14 +2302,21 @@ EG_evaluate(const egObject *geom, const double *param,
 
   if  (geom == NULL)               return EGADS_NULLOBJ;
   if  (geom->magicnumber != MAGIC) return EGADS_NOTOBJ;
-  if ((geom->oclass != PCURVE) &&
+  if ((geom->oclass != NODE) &&
+      (geom->oclass != PCURVE) &&
       (geom->oclass != CURVE)  && (geom->oclass != SURFACE) &&
       (geom->oclass != EDGE)   && (geom->oclass != FACE))
                                    return EGADS_NOTGEOM;
   if (geom->blind == NULL)         return EGADS_NODATA;
   outLevel = EG_outLevel(geom);
   
-  if (geom->oclass == PCURVE) {
+  if (geom->oclass == NODE){
+    egadsNode *node = (egadsNode *) geom->blind;
+    result[0] = node->xyz[0];
+    result[1] = node->xyz[1];
+    result[2] = node->xyz[2];
+    
+  } else if (geom->oclass == PCURVE) {
     gp_Pnt2d P2d;
     gp_Vec2d V12d, V22d;
 
