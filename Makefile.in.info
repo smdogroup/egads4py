@@ -1,0 +1,33 @@
+# Do not modify this file. Copy this file to Makefile.in and then modify it.
+
+# the full path to the root directory
+EGADS_DIR = ${HOME}/git/egads4py
+CC = mpicc
+CXX = mpicxx
+RM = rm -f
+
+# Flags for debugging and regular compilation versions
+EGADS_DEBUG_FLAGS = -fPIC -g
+EGADS_FLAGS = -fPIC -O3
+
+# Set the linking command - use either static/dynamic linking
+# EGADS_LD_CMD=${EGADS_DIR}/lib/libegads.a
+EGADS_LD_CMD=-L${EGADS_DIR}/lib/ -Wl,-rpath,${EGADS_DIR}/lib -legads
+
+# Set up for parallel make
+MAKE = make -j 8
+
+# Set the ar flags
+AR_FLAGS = rcs
+
+# For linux systems, use the following settings:
+SO_EXT=so
+SO_LINK_FLAGS=-fPIC -shared
+
+# For MAC OS X, use the following settings:
+# SO_EXT=so
+# SO_LINK_FLAGS=-fPIC -dynamiclib
+
+OPENCASCADE_INCLUDE = -I${CASROOT}/${CASARCH}/inc
+OPENCASCADE_LIB_PATH = -L${CASROOT}/${CASARCH}/lib -Wl,-rpath,${CASROOT}/${CASARCH}/lib
+OPENCASCADE_LIBS = -lTKBool -lTKernel -lTKFeat -lTKBO -lTKGeomAlgo -lTKMath -lTKOffset -lTKPrim -lTKPShape -lTKTopAlgo -lTKBRep -lTKG2d -lTKG3d -lTKGeomBase -lTKShHealing -lTKSTEP -lTKSTEP209 -lTKSTEPBase -lTKSTEPAttr -lTKXSBase -lTKIGES -lTKFillet -lPTKernel -ldl
