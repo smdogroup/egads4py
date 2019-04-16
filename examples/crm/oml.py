@@ -127,4 +127,5 @@ for k in range(3):
 model = ctx.sewFaces(face_list, toler=1e-3, manifold=False)
 
 # Write out the model
+model.saveModel('ucrm_9_oml.egads', overwrite=True)
 model.saveModel('ucrm_9_oml.step', overwrite=True)

@@ -21,24 +21,11 @@ m2 = ctx.makeTopology(egads.MODEL, children=[b2])
 m1.saveModel('box1.egads', overwrite=True)
 m2.saveModel('box2.egads', overwrite=True)
 
-'''
-Load the model into TMR
-'''
-
-# def init_geo(geo):
-#     # Set up the geom for volume meshing
-    
-#     return geo
-
 comm = MPI.COMM_WORLD
 htarget = 0.05
 
 geo1 = TMR.LoadModel('box1.egads', print_lev=1)
 geo2 = TMR.LoadModel('box2.egads', print_lev=1)
-
-# for f1 in faces1:
-#     for f2 in faces2:
-#         print(checkCoincidentFaces(f1, f2))
 
 findMatchingFaces(geo1, geo2)
 
@@ -47,14 +34,16 @@ edges = []
 faces = []
 vols = []
 for geo in [geo1, geo2]:
+    f = geo.getFaces()
+    v = geo.getVolumes()
+    f[0].setSource(v[0], f[1])
+
     verts.extend(geo.getVertices())
     edges.extend(geo.getEdges())
-    faces.extend(geo.getFaces())
+    faces.extend(f)
     vols.extend(geo.getVolumes())
 
-geo = TMR.Model(verts, edges, faces)
-
-# geo = TMR.Model(verts, edges, faces)
+geo = TMR.Model(verts, edges, faces, vols)
 
 # Create the new mesh
 mesh = TMR.Mesh(comm, geo)
@@ -68,5 +57,5 @@ opts.triangularize_print_iter = 50000
 mesh.mesh(htarget, opts)
 
 # Write the surface mesh to a file
-mesh.writeToVTK('output.vtk')
+mesh.writeToVTK('output.vtk', 'hex')
 
