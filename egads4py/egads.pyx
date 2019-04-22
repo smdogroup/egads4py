@@ -207,7 +207,7 @@ def revision():
 
 def _convert_rdata(rdata):
     rvec = []
-    try:    
+    try:
         for item in rdata:
             if isinstance(item, (int, float)):
                 rvec.append(item)
@@ -221,9 +221,6 @@ def _convert_rdata(rdata):
     return rvec
 
 cdef class context:
-    cdef ego context
-    cdef list refs
-
     def __init__(self):
         cdef int stat
         stat = EG_open(&self.context)
@@ -239,7 +236,7 @@ cdef class context:
         if stat:
             _checkErr(stat)
         return
-    
+
     def setOutLevel(self, int outlevel):
         '''
         Set output level
@@ -409,7 +406,7 @@ cdef class context:
                 errmsg += ', SHEETBODY or SOLIDBODY'
         if errmsg is not None:
             raise ValueError(errmsg)
-        
+
         if ((oclass == FACE or oclass == LOOP) and
             len(children) != len(sens)):
             errmsg = 'Children and senses list must be of equal length'
@@ -441,7 +438,7 @@ cdef class context:
 
         if geom is not None:
             refptr = geom.ptr
-            
+
         new = pyego(self)
         stat = EG_makeTopology(self.context, refptr, oclass, mtype,
                                data, nchildren, childarray,
@@ -476,10 +473,10 @@ cdef class context:
 
         returns:
         obj: the resultant LOOP Object
-        nedges: the number of non-None entries in edges when returned 
+        nedges: the number of non-None entries in edges when returned
         or error code
         '''
-        cdef int nloop_edges = 0 
+        cdef int nloop_edges = 0
         cdef int nedges
         cdef ego *edgs = NULL
         cdef ego geoptr = NULL
@@ -651,7 +648,7 @@ cdef class context:
         if stat:
             _checkErr(stat)
         return new
-    
+
     def blend(self, list sections, list _rc1=None, list _rc2=None):
         '''
         Simply lofts the input Objects to create a BODY Object (that
@@ -679,7 +676,7 @@ cdef class context:
         Returns
         -------
         the resultant BODY object
-        
+
         * for NODEs -- elliptical treatment (8 in length): radius of
         curvature1, unit direction, rc2, orthogonal direction;
         nSection must be at least 3 (or 4 for treatments at both ends)
@@ -705,7 +702,7 @@ cdef class context:
         if _rc2 is not None:
             for i in range(min(len(_rc2), 8)):
                 rc2[i] = _rc2[i]
-            rc2ptr = rc2          
+            rc2ptr = rc2
         new = pyego(self)
         stat = EG_blend(nsec, secs, rc1ptr, rc2ptr, &new.ptr)
         if stat:
@@ -748,9 +745,6 @@ cdef class context:
         return
 
 cdef class pyego:
-    cdef ego ptr
-    cdef context ctx
-    
     def __cinit__(self, context ctx):
         self.ctx = ctx
         self.ctx.refs.append(self)
@@ -799,11 +793,11 @@ cdef class pyego:
         '''Get a string representation of the class type'''
         oclass, mtype = self.getInfo()
         return oclass_str[oclass]
-        
+
     def saveModel(self, fname, overwrite=False):
         '''
         Saves the model based on the filename extension
-        '''        
+        '''
         cdef int stat
         cdef char* filename = egads_convert_to_chars(fname)
         if overwrite and os.path.exists(filename):
@@ -861,7 +855,7 @@ cdef class pyego:
 
     def getGeometry(self):
         '''
-        Returns information about the geometric object: 
+        Returns information about the geometric object:
 
         Returns
         -------
@@ -879,7 +873,7 @@ cdef class pyego:
         cdef int *ivec = NULL
         cdef double *rvec = NULL
         cdef ego refgeo
-        stat = EG_getGeometry(self.ptr, &oclass, &mtype, &refgeo, 
+        stat = EG_getGeometry(self.ptr, &oclass, &mtype, &refgeo,
                               &ivec, &rvec)
         if stat:
             _checkErr(stat)
@@ -900,19 +894,19 @@ cdef class pyego:
         periodic:
         0 for non-periodic, 1 for periodic in t or u 2 for periodic in
         v (or-able)
-        '''        
+        '''
         cdef int stat
         cdef double r[4]
         cdef int periodic
         cdef int oclass
-        if (self.ptr.oclass == EGADS_PCURVE or 
-            self.ptr.oclass == EGADS_CURVE or 
+        if (self.ptr.oclass == EGADS_PCURVE or
+            self.ptr.oclass == EGADS_CURVE or
             self.ptr.oclass == EGADS_EDGE):
             stat = EG_getRange(self.ptr, r, &periodic)
             if stat:
                 _checkErr(stat)
             return [r[0], r[1]], periodic
-        elif (self.ptr.oclass == EGADS_SURFACE or 
+        elif (self.ptr.oclass == EGADS_SURFACE or
               self.ptr.oclass == EGADS_EDGE):
             stat = EG_getRange(self.ptr, r, &periodic)
             if stat:
@@ -949,7 +943,7 @@ cdef class pyego:
         Returns:
         For PCURVE, CURVE, EDGE: X, X,t and X,tt
         For SURFACE, FACE: X, [X,u, X,v], [X,uu, X,uv, X,vv]
-        '''        
+        '''
         cdef int stat
         cdef double param[2]
         cdef double r[18]
@@ -1212,7 +1206,7 @@ cdef class pyego:
         elif atype == EGADS_ATTRSTRING:
             return egads_convert_chars_to_str(chars)
         return None
-        
+
     def attributeDup(self, pyego dup):
         '''
         Removes all attributes from the destination object, then copies the
@@ -1230,7 +1224,7 @@ cdef class pyego:
 
         Returns
         -------
-        
+
         geo:
         The reference geometry object (if none this is returned as None)
 
@@ -1342,7 +1336,7 @@ cdef class pyego:
         the returned number of requested topological objects is a
         returned pointer to the block of objects
         '''
-        
+
         cdef int stat
         cdef ego src = NULL
         cdef int ntopos = 0
@@ -1415,7 +1409,7 @@ cdef class pyego:
 
         Parameters
         ----------
-        
+
         tool:
         the FACE/FACEBODY/SHEETBODY/SOLIDBODY tool object
 
@@ -1435,7 +1429,7 @@ cdef class pyego:
         cdef int nobj
         cdef ego *faceEdgePairs = NULL
         new = pyego(self.ctx)
-        stat = EG_intersection(self.ptr, tool.ptr, &nobj, &faceEdgePairs, 
+        stat = EG_intersection(self.ptr, tool.ptr, &nobj, &faceEdgePairs,
                                &new.ptr)
         if stat == EGADS_CONSTERR or nobj == 0:
             return None, []
@@ -1454,7 +1448,7 @@ cdef class pyego:
             pairs.append(e)
         if faceEdgePairs:
             free(faceEdgePairs)
-        return new, pairs 
+        return new, pairs
 
     def imprintBody(self, list pairs):
         '''
@@ -1479,7 +1473,7 @@ cdef class pyego:
         cdef int stat
         cdef nobj = 0
         cdef ego* objs = NULL
-        nobj = len(pairs) 
+        nobj = len(pairs)
         objs = <ego*>malloc(nobj*sizeof(ego))
         for i in range(nobj):
             objs[i] = (<pyego>pairs[i]).ptr
@@ -1509,7 +1503,7 @@ cdef class pyego:
         cdef nedges = 0
         cdef ego* edgs = NULL
         cdef int *facemap
-        nedges = len(edges) 
+        nedges = len(edges)
         edgs = <ego*>malloc(nedges*sizeof(ego))
         for i in range(nedges):
             edgs[i] = (<pyego>edges[i]).ptr
@@ -1521,12 +1515,12 @@ cdef class pyego:
         if stat:
             _checkErr(stat)
         return new
-    
+
     def extrude(self, double dist, _dir):
         '''
-        Extrudes the source Object through the distance specified. 
-        If the Object is either a LOOP or WIREBODY the result is a 
-        SHEETBODY. If the source is either a FACE or FACEBODY then 
+        Extrudes the source Object through the distance specified.
+        If the Object is either a LOOP or WIREBODY the result is a
+        SHEETBODY. If the source is either a FACE or FACEBODY then
         the returned Object is a SOLIDBODY.
 
         Parameters
@@ -1537,7 +1531,7 @@ cdef class pyego:
 
         Returns
         -------
-        the resultant BODY object (type is one greater than the 
+        the resultant BODY object (type is one greater than the
         input source object)
         '''
         cdef int stat
@@ -1598,4 +1592,3 @@ cdef class pyego:
         if stat:
             _checkErr(stat)
         return new
-

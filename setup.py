@@ -20,6 +20,9 @@ def get_global_dir(files):
 
 # Relative paths for the include/library directories
 rel_inc_dirs = ['include', 'src', 'src/Surreal']
+rel_lib_dirs = ['lib']
+libs = ['egads']
+sources = ['egads4py/egads.pyx']
 
 # Convert from relative to absolute directories
 inc_dirs = get_global_dir(rel_inc_dirs)
@@ -31,6 +34,7 @@ runtime_lib_dirs = [os.path.join(os.environ['CASROOT'],
 
 # Add the numpy directories
 inc_dirs.extend([numpy.get_include()])
+lib_dirs.extend(get_global_dir(rel_lib_dirs))
 
 # Add the include directories from OpenCascade
 for sufix in ['include/oce', 'inc', 'include']:
@@ -40,25 +44,22 @@ for sufix in ['include/oce', 'inc', 'include']:
         break
 
 # Add the libraries from OpenCascade
-libs = ['TKBool', 'TKernel', 'TKFeat', 'TKBO', 'TKGeomAlgo', 
-        'TKMath', 'TKOffset', 'TKPrim', 'TKPShape', 'TKTopAlgo', 
-        'TKBRep', 'TKG2d', 'TKG3d', 'TKGeomBase', 'TKShHealing', 
-        'TKSTEP', 'TKSTEP209', 'TKSTEPBase', 'TKSTEPAttr', 
-        'TKXSBase', 'TKIGES', 'TKFillet', 'PTKernel', 'dl' ]
+libs.extend(['TKBool', 'TKernel', 'TKFeat', 'TKBO', 'TKGeomAlgo',
+             'TKMath', 'TKOffset', 'TKPrim', 'TKPShape', 'TKTopAlgo',
+             'TKBRep', 'TKG2d', 'TKG3d', 'TKGeomBase', 'TKShHealing',
+             'TKSTEP', 'TKSTEP209', 'TKSTEPBase', 'TKSTEPAttr',
+             'TKXSBase', 'TKIGES', 'TKFillet', 'PTKernel', 'dl' ])
 
 exts = []
-sources = ['egads4py/egads.pyx']
-sources.extend(glob('src/*.c'))
-sources.extend(glob('src/*.cpp'))
 
 exts.append(Ext('egads4py.egads', sources=sources,
-                include_dirs=inc_dirs, libraries=libs, 
-                library_dirs=lib_dirs, 
+                include_dirs=inc_dirs, libraries=libs,
+                library_dirs=lib_dirs,
                 runtime_library_dirs=runtime_lib_dirs))
 setup(name='egads4py',
       version=0.1,
       description='python interface to egads',
       author='Graeme J. Kennedy',
       author_email='graeme.kennedy@ae.gatech.edu',
-      ext_modules=cythonize(exts, language='c', 
+      ext_modules=cythonize(exts, language='c',
                             include_path=inc_dirs))
