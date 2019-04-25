@@ -1,5 +1,4 @@
 from egads4py import egads
-from tmr import TMR
 
 ctx = egads.context()
 

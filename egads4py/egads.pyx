@@ -744,6 +744,65 @@ cdef class context:
             _checkErr(stat)
         return
 
+    def approximate(self, xyz, int dim1=-1, int maxdeg=3,
+                    double tol=0.0):
+        '''
+        Computes and returns the resultant geometry object created by
+        approximating the data by a BSpline (OCC or EGADS method).
+
+        Parameters
+        ----------
+        maxdeg:
+        the maximum degree used by OCC [3-8], or cubic by EGADS [0-2]
+        0 – fixes the bounds and uses natural end conditions
+        1 – fixes the bounds and maintains the slope input at the bounds
+        2 – fixes the bounds & quadratically maintains the slope at 2 nd order
+
+        tol:
+        is the tolerance to use for the BSpline approximation procedure,
+        zero for a SURFACE fit (OCC).
+
+        sizes:
+        a vector of 2 integers that specifies the size and dimensionality of
+        the data. If the second is zero, then a CURVE is fit and the first
+        integer is the length of the number of [x,y,z] triads. If the second
+        integer is nonzero then the input data reflects a 2D map.
+
+        xyz:
+        the data to fit (3 times the number of points in length)
+
+        Returns
+        -------
+        the returned approximated (or fit) BSpline resultant object
+        '''
+        cdef int stat
+        cdef int sizes[2]
+        cdef double *xyz_array = NULL
+
+        if dim1 <= 0:
+            sizes[0] = len(xyz)
+            sizes[1] = 0
+            length = sizes[0]
+        else:
+            sizes[0] = dim1
+            sizes[1] = len(xyz)//dim1
+            length = sizes[0]*sizes[1]
+
+        # Allocate the points
+        xyz_array = <double*>malloc(3*length*sizeof(double))
+        for i in range(length):
+            xyz_array[3*i] = xyz[i][0]
+            xyz_array[3*i+1] = xyz[i][1]
+            xyz_array[3*i+2] = xyz[i][2]
+
+        new = pyego(self)
+        stat = EG_approximate(self.context, maxdeg, tol, sizes,
+                              xyz_array, &new.ptr)
+        free(xyz_array)
+        if stat:
+            _checkErr(stat)
+        return new
+
 cdef class pyego:
     def __cinit__(self, context ctx):
         self.ctx = ctx
@@ -1356,8 +1415,57 @@ cdef class pyego:
             t = pyego(self.ctx)
             t.ptr = topos[i]
             tlist.append(t)
-        free(topos)
+        EG_free(topos)
         return tlist
+
+    def matchBodyFaces(self, pyego body, double toler):
+        '''
+        Examines the FACEs in one BODY against all of the FACEs in
+        another. If the number of LOOPs, number of NODEs, the NODE
+        locations, the number of EDGEs and the EDGE bounding boxes as
+        well as the EDGE arc lengths match it is assumed that the
+        FACEs match. A list of pairs of indices are returned.
+
+        Parameters
+        ----------
+        body:
+        body container object
+
+        toler:
+        the tolerance used (can be zero to use entity tolerances)
+
+        Returns
+        -------
+        a list of the tuples of matching indices
+
+        Note: This is useful for the situation where there are
+        glancing FACEs and a UNION operation fails (or would
+        fail). Simply find the matching FACEs and do not include them
+        in a call to EG_sewFaces.
+        '''
+        cdef int stat
+        cdef ego body1 = NULL
+        cdef ego body2 = NULL
+        cdef int nmatches = 0
+        cdef int *match = NULL
+
+        matches = None
+        if body.ptr.oclass == BODY and self.ptr.oclass == BODY:
+            stat = EG_matchBodyFaces(self.ptr, body.ptr, toler,
+                                     &nmatches, &match)
+            if stat:
+                _checkErr(stat)
+            if nmatches > 0:
+                matches = []
+                for i in range(nmatches):
+                    matches.append((match[2*i], match[2*i+1]))
+
+                EG_free(match)
+        else:
+            errmsg = 'Both objects must have object class BODY'
+            raise ValueError(errmsg)
+
+        return None
 
     def indexBodyTopo(self, pyego src):
         '''

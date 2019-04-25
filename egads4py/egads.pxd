@@ -201,13 +201,13 @@ cdef extern from "egads.h":
     #                    double *alen )
     # int  EG_curvature( const ego geom, const double *param,
     #                    double *results )
-    # int  EG_approximate( ego context, int maxdeg, double tol,
-    #                      const int *sizes, const double *xyzs,
-    #                      ego *bspline )
-    # int  EG_fitTriangles( ego context, int npts, double *xyzs,
-    #                       int ntris, const int *tris,
-    #                       const int *tric, double tol,
-    #                       ego *bspline )
+    int  EG_approximate( ego context, int maxdeg, double tol,
+                         const int *sizes, const double *xyzs,
+                         ego *bspline )
+    int  EG_fitTriangles( ego context, int npts, double *xyzs,
+                          int ntris, const int *tris,
+                          const int *tric, double tol,
+                          ego *bspline )
     # int  EG_otherCurve( const ego surface, const ego curve,
     #                     double tol, ego *newcurve )
     int  EG_isSame( const ego geom1, const ego geom2 )
@@ -251,8 +251,8 @@ cdef extern from "egads.h":
     #                       ego *result )
     # int  EG_mapBody( const ego sBody,   const ego dBody,
     #                  const char *fAttr, ego *mapBody )
-    # int  EG_matchBodyFaces( const ego body1, const ego body2,
-    #                         double toler, int *nmatch, int **match )
+    int  EG_matchBodyFaces( const ego body1, const ego body2,
+                            double toler, int *nmatch, int **match )
 
     # int  EG_setTessParam( ego context, int iparam, double value,
     #                       double *oldvalue )
@@ -319,3 +319,4 @@ cdef extern from "egads.h":
     int  EG_blend( int nsec, const ego *secs, double *rc1,
                    double *rcN, ego *result )
     int  EG_ruled( int nsec, const ego *secs, ego *result )
+    void EG_free( void* )

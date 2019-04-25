@@ -35,6 +35,7 @@ runtime_lib_dirs = [os.path.join(os.environ['CASROOT'],
 # Add the numpy directories
 inc_dirs.extend([numpy.get_include()])
 lib_dirs.extend(get_global_dir(rel_lib_dirs))
+runtime_lib_dirs.extend(get_global_dir(rel_lib_dirs))
 
 # Add the include directories from OpenCascade
 for sufix in ['include/oce', 'inc', 'include']:

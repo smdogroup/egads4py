@@ -15,7 +15,7 @@ x = [0, 0, 0.5]
 d = [0.5, 0.5, 0.5]
 b2 = ctx.makeSolidBody(egads.BOX, rdata=[x, d])
 
-# Write out to a STEP file
+# Write out to a EGADS file
 m1 = ctx.makeTopology(egads.MODEL, children=[b1])
 m2 = ctx.makeTopology(egads.MODEL, children=[b2])
 m1.saveModel('box1.egads', overwrite=True)
@@ -36,14 +36,14 @@ vols = []
 for geo in [geo1, geo2]:
     f = geo.getFaces()
     v = geo.getVolumes()
-    f[0].setSource(v[0], f[1])
+    # f[2].setSource(v[0], f[3])
 
     verts.extend(geo.getVertices())
     edges.extend(geo.getEdges())
     faces.extend(f)
     vols.extend(geo.getVolumes())
 
-geo = TMR.Model(verts, edges, faces, vols)
+geo = TMR.Model(verts, edges, faces)# , vols)
 
 # Create the new mesh
 mesh = TMR.Mesh(comm, geo)
@@ -57,5 +57,5 @@ opts.triangularize_print_iter = 50000
 mesh.mesh(htarget, opts)
 
 # Write the surface mesh to a file
-mesh.writeToVTK('output.vtk', 'hex')
+mesh.writeToVTK('output.vtk', 'quad')
 
