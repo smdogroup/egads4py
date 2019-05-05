@@ -257,10 +257,11 @@ cdef class context:
         cdef double T[12]
         for i in range(12):
             T[i] = xform[i]
-        new = pyego(self)
-        stat = EG_makeTransform(self.context, T, &new.ptr)
+        new_obj = pyego(self)
+        stat = EG_makeTransform(self.context, T, &new_obj.ptr)
         if stat:
             _checkErr(stat)
+        return new_obj
 
     def makeGeometry(self, int oclass, int mtype,
                      pyego geom=None, idata=None, rdata=None):
@@ -331,16 +332,16 @@ cdef class context:
             rptr = <double*>malloc(len(rvec)*sizeof(double))
             for i in range(len(rvec)):
                 rptr[i] = rvec[i]
-        new = pyego(self)
+        new_obj = pyego(self)
         stat = EG_makeGeometry(self.context, oclass, mtype, refptr,
-                               iptr, rptr, &new.ptr)
+                               iptr, rptr, &new_obj.ptr)
         if stat:
             _checkErr(stat)
         if len(ivec) > 0:
             free(iptr)
         if len(rvec) > 0:
             free(rptr)
-        return new
+        return new_obj
 
     def makeTopology(self, int oclass, int mtype=0, pyego geom=None,
                      children=None, sens=None, rdata=None):
@@ -439,15 +440,15 @@ cdef class context:
         if geom is not None:
             refptr = geom.ptr
 
-        new = pyego(self)
+        new_obj = pyego(self)
         stat = EG_makeTopology(self.context, refptr, oclass, mtype,
                                data, nchildren, childarray,
-                               senses, &new.ptr)
+                               senses, &new_obj.ptr)
         if stat:
             _checkErr(stat)
         free(childarray)
         free(senses)
-        return new
+        return new_obj
 
     def makeLoop(self, list edges, pyego geom=None, double toler=0.0):
         '''
@@ -489,13 +490,13 @@ cdef class context:
                 edgs[i] = NULL
             else:
                 edgs[i] = (<pyego>edges[i]).ptr
-        new = pyego(self)
-        nloop_edges = EG_makeLoop(nedges, edgs, geoptr, toler, &new.ptr)
+        new_obj = pyego(self)
+        nloop_edges = EG_makeLoop(nedges, edgs, geoptr, toler, &new_obj.ptr)
         for i in range(nedges):
             if edgs[i] == NULL:
                 edges[i] = None
         free(edgs)
-        return new, nloop_edges
+        return new_obj, nloop_edges
 
     def makeFace(self, pyego obj, int mtype, rdata=None):
         '''
@@ -540,11 +541,11 @@ cdef class context:
             data[1] = rdata[1]
             ptr = data
 
-        new = pyego(self)
-        stat = EG_makeFace(obj.ptr, mtype, ptr, &new.ptr)
+        new_obj = pyego(self)
+        stat = EG_makeFace(obj.ptr, mtype, ptr, &new_obj.ptr)
         if stat and stat != EGADS_OUTSIDE:
             _checkErr(stat)
-        return new
+        return new_obj
 
     def makeSolidBody(self, int stype, rdata=None):
         '''
@@ -618,12 +619,12 @@ cdef class context:
             objs = <ego*>malloc(nobj*sizeof(ego))
             for i in range(nobj):
                 objs[i] = (<pyego>objlist[i]).ptr
-            new = pyego(self)
-            stat = EG_sewFaces(nobj, objs, toler, flag, &new.ptr)
+            new_obj = pyego(self)
+            stat = EG_sewFaces(nobj, objs, toler, flag, &new_obj.ptr)
             if stat:
                 _checkErr(stat)
             free(objs)
-            return new
+            return new_obj
         return None
 
     def loadModel(self, fname, split=False):
@@ -642,12 +643,12 @@ cdef class context:
         cdef char *filename = NULL
         if split:
             bflag = 2
-        new = pyego(self)
+        new_obj = pyego(self)
         filename = egads_convert_to_chars(fname)
-        stat = EG_loadModel(self.context, bflag, filename, &new.ptr)
+        stat = EG_loadModel(self.context, bflag, filename, &new_obj.ptr)
         if stat:
             _checkErr(stat)
-        return new
+        return new_obj
 
     def blend(self, list sections, list _rc1=None, list _rc2=None):
         '''
@@ -703,12 +704,12 @@ cdef class context:
             for i in range(min(len(_rc2), 8)):
                 rc2[i] = _rc2[i]
             rc2ptr = rc2
-        new = pyego(self)
-        stat = EG_blend(nsec, secs, rc1ptr, rc2ptr, &new.ptr)
+        new_obj = pyego(self)
+        stat = EG_blend(nsec, secs, rc1ptr, rc2ptr, &new_obj.ptr)
         if stat:
             _checkErr(stat)
         free(secs)
-        return new
+        return new_obj
 
     def ruled(self, list sections):
         '''
@@ -737,12 +738,12 @@ cdef class context:
         secs = <ego*>malloc(nsec*sizeof(ego))
         for i in range(nsec):
             secs[i] = (<pyego>sections[i]).ptr
-        new = pyego(self)
-        stat = EG_ruled(nsec, secs, &new.ptr)
+        new_obj = pyego(self)
+        stat = EG_ruled(nsec, secs, &new_obj.ptr)
         free(secs)
         if stat:
             _checkErr(stat)
-        return
+        return new_obj
 
     def approximate(self, xyz, int dim1=-1, int maxdeg=3,
                     double tol=0.0):
@@ -795,13 +796,13 @@ cdef class context:
             xyz_array[3*i+1] = xyz[i][1]
             xyz_array[3*i+2] = xyz[i][2]
 
-        new = pyego(self)
+        new_obj = pyego(self)
         stat = EG_approximate(self.context, maxdeg, tol, sizes,
-                              xyz_array, &new.ptr)
+                              xyz_array, &new_obj.ptr)
         free(xyz_array)
         if stat:
             _checkErr(stat)
-        return new
+        return new_obj
 
 cdef class pyego:
     def __cinit__(self, context ctx):
@@ -887,11 +888,11 @@ cdef class pyego:
         Creates a new EGADS object by copying.
         '''
         cdef int stat
-        new = pyego(self.ctx)
-        stat = EG_copyObject(self.ptr, NULL, &new.ptr)
+        new_obj = pyego(self.ctx)
+        stat = EG_copyObject(self.ptr, NULL, &new_obj.ptr)
         if stat:
             _checkErr(stat)
-        return new
+        return new_obj
 
     def flip(self):
         '''
@@ -1501,11 +1502,11 @@ cdef class pyego:
         operation).
         '''
         cdef int stat
-        new = pyego(self.ctx)
-        stat = EG_solidBoolean(self.ptr, tool.ptr, oper, &new.ptr)
+        new_obj = pyego(self.ctx)
+        stat = EG_solidBoolean(self.ptr, tool.ptr, oper, &new_obj.ptr)
         if stat:
             _checkErr(stat)
-        return new
+        return new_obj
 
     def intersection(self, pyego tool):
         '''
@@ -1536,9 +1537,9 @@ cdef class pyego:
         cdef int stat
         cdef int nobj
         cdef ego *faceEdgePairs = NULL
-        new = pyego(self.ctx)
+        new_obj = pyego(self.ctx)
         stat = EG_intersection(self.ptr, tool.ptr, &nobj, &faceEdgePairs,
-                               &new.ptr)
+                               &new_obj.ptr)
         if stat == EGADS_CONSTERR or nobj == 0:
             return None, []
         elif stat:
@@ -1556,7 +1557,7 @@ cdef class pyego:
             pairs.append(e)
         if faceEdgePairs:
             free(faceEdgePairs)
-        return new, pairs
+        return new_obj, pairs
 
     def imprintBody(self, list pairs):
         '''
@@ -1585,12 +1586,12 @@ cdef class pyego:
         objs = <ego*>malloc(nobj*sizeof(ego))
         for i in range(nobj):
             objs[i] = (<pyego>pairs[i]).ptr
-        new = pyego(self.ctx)
-        stat = EG_imprintBody(self.ptr, nobj/2, objs, &new.ptr)
+        new_obj = pyego(self.ctx)
+        stat = EG_imprintBody(self.ptr, nobj/2, objs, &new_obj.ptr)
         free(objs)
         if stat:
             _checkErr(stat)
-        return new
+        return new_obj
 
     def filletBody(self, list edges, double radius):
         '''
@@ -1615,14 +1616,14 @@ cdef class pyego:
         edgs = <ego*>malloc(nedges*sizeof(ego))
         for i in range(nedges):
             edgs[i] = (<pyego>edges[i]).ptr
-        new = pyego(self.ctx)
-        stat = EG_filletBody(self.ptr, nedges, edgs, radius, &new.ptr,
+        new_obj = pyego(self.ctx)
+        stat = EG_filletBody(self.ptr, nedges, edgs, radius, &new_obj.ptr,
                              &facemap)
         free(edgs)
         free(facemap)
         if stat:
             _checkErr(stat)
-        return new
+        return new_obj
 
     def extrude(self, double dist, _dir):
         '''
@@ -1646,11 +1647,11 @@ cdef class pyego:
         cdef double direction[3]
         for i in range(3):
             direction[i] = _dir[i]
-        new = pyego(self.ctx)
-        stat = EG_extrude(self.ptr, dist, direction, &new.ptr)
+        new_obj = pyego(self.ctx)
+        stat = EG_extrude(self.ptr, dist, direction, &new_obj.ptr)
         if stat:
             _checkErr(stat)
-        return new
+        return new_obj
 
     def rotate(self, double angle, _axis):
         '''
@@ -1673,11 +1674,11 @@ cdef class pyego:
         cdef double axis[6]
         for i in range(6):
             axis[i] = _axis[i]
-        new = pyego(self.ctx)
-        stat = EG_rotate(self.ptr, angle, axis, &new.ptr)
+        new_obj = pyego(self.ctx)
+        stat = EG_rotate(self.ptr, angle, axis, &new_obj.ptr)
         if stat:
             _checkErr(stat)
-        return new
+        return new_obj
 
     def sweep(self, pyego spline, int mode):
         '''
@@ -1695,8 +1696,8 @@ cdef class pyego:
         mode: Integer indicating the mode
         '''
         cdef int stat
-        new = pyego(self.ctx)
-        stat = EG_sweep(self.ptr, spline.ptr, mode, &new.ptr)
+        new_obj = pyego(self.ctx)
+        stat = EG_sweep(self.ptr, spline.ptr, mode, &new_obj.ptr)
         if stat:
             _checkErr(stat)
-        return new
+        return new_obj
