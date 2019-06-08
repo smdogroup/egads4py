@@ -1,5 +1,5 @@
 # Import the definition required for const strings
-from libc.string cimport const_char
+from libc.string cimport const_char, strcpy, strlen
 from libc.stdlib cimport malloc, free
 
 # Import numpy
@@ -1146,9 +1146,12 @@ cdef class pyego:
         cdef int length = 0
         cdef int *ints = NULL
         cdef double *reals = NULL
+        cdef const char *temp = NULL
         cdef char *chars = NULL
-        cdef bytes bstr
         cdef char *name = NULL
+        temp = egads_convert_to_chars(aname)
+        name = <char*>malloc(strlen(temp)+1)
+        strcpy(name, temp)
 
         if atype == EGADS_ATTRINT:
             length = len(data)
@@ -1161,18 +1164,22 @@ cdef class pyego:
             for i in range(length):
                 reals[i] = <double>data[i]
         elif atype == EGADS_ATTRSTRING:
-            length = len(data)+1
-            chars = egads_convert_to_chars(data)
+            temp = egads_convert_to_chars(data)
+            chars = <char*>malloc(strlen(temp)+1)
+            strcpy(chars, temp)
 
-        name = egads_convert_to_chars(aname)
         stat = EG_attributeAdd(self.ptr, name, atype, length,
                                ints, reals, chars)
         if stat:
             _checkErr(stat)
+
+        free(name)
         if ints:
             free(ints)
         if reals:
             free(reals)
+        if chars:
+            free(chars)
         return
 
     def attributeDel(self, aname=None):
