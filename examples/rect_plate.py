@@ -32,48 +32,29 @@ n2 = ctx.makeTopology(egads.NODE, rdata=x2)
 n3 = ctx.makeTopology(egads.NODE, rdata=x3)
 n4 = ctx.makeTopology(egads.NODE, rdata=x4)
 
-# Define the parabolas for the curved edges
-dh = h/4.0 # the maximum height removed from the sides: dh < h/2
-a = 4.0*dh/(l**2)
-x01 = [l/2.0,   dh, 0.0]
-x02 = [l/2.0, h-dh, 0.0]
-focus = 0.25/a
-pxaxis = [0.0,  1.0, 0.0]
-nxaxis = [0.0, -1.0, 0.0]
-yaxis  = [1.0,  0.0, 0.0]
-
 # Make the curves
-l1 = ctx.makeGeometry(egads.CURVE, mtype=egads.PARABOLA,
-                      rdata=[x01, nxaxis, yaxis, focus])
+l1 = ctx.makeGeometry(egads.CURVE, mtype=egads.LINE,
+                      rdata=[x1, d1])
 l2 = ctx.makeGeometry(egads.CURVE, mtype=egads.LINE,
                       rdata=[x2, d2])
-l3 = ctx.makeGeometry(egads.CURVE, mtype=egads.PARABOLA,
-                      rdata=[x02, pxaxis, yaxis, focus])
+l3 = ctx.makeGeometry(egads.CURVE, mtype=egads.LINE,
+                      rdata=[x3, d3])
 l4 = ctx.makeGeometry(egads.CURVE, mtype=egads.LINE,
                       rdata=[x4, d4])
 
-tmin = -2.0
-tmax = 2.0
-
 # Make the edges
 e1 = ctx.makeTopology(egads.EDGE, mtype=egads.TWONODE, geom=l1,
-                      children=[n1, n2], rdata=[tmin, tmax])
-
+                      children=[n1, n2],
+                      rdata=[0, np.sqrt(np.dot(d1, d1))])
 e2 = ctx.makeTopology(egads.EDGE, mtype=egads.TWONODE, geom=l2,
                       children=[n2, n3],
                       rdata=[0, np.sqrt(np.dot(d2, d2))])
 e3 = ctx.makeTopology(egads.EDGE, mtype=egads.TWONODE, geom=l3,
-                      children=[n4, n3], rdata=[tmin, tmax])
-
+                      children=[n3, n4],
+                      rdata=[0, np.sqrt(np.dot(d3, d3))])
 e4 = ctx.makeTopology(egads.EDGE, mtype=egads.TWONODE, geom=l4,
                       children=[n4, n1],
                       rdata=[0, np.sqrt(np.dot(d4, d4))])
-
-# Add attributes
-e1.attributeAdd('name', egads.ATTRSTRING, 'bottom_edge')
-e2.attributeAdd('name', egads.ATTRSTRING, 'right_edge')
-e3.attributeAdd('name', egads.ATTRSTRING, 'top_edge')
-e4.attributeAdd('name', egads.ATTRSTRING, 'left_edge')
 
 # Make the edge loop
 el1, nloop_edges = ctx.makeLoop([e1, e2, e3, e4])
@@ -89,4 +70,4 @@ panel_model = ctx.makeTopology(egads.MODEL,
                                children=[panel_body])
 
 # Save the model
-panel_model.saveModel('plate.step', overwrite=True)
+panel_model.saveModel('rect_plate.step', overwrite=True)
