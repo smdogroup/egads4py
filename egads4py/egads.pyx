@@ -292,6 +292,18 @@ cdef class context:
         is the pointer to a block of double precision reals. The
         content and length depends on the oclass/mtype.
 
+        - For mtype=LINE: rdata=[x0, dx], where x0 is the starting
+          point of the line, and dx is the distance of the line in each
+          direction
+        - For mtype=PARABOLA: rdata=[O, XDir, YDir, F]
+          The parametric equation takes the form:
+          P(U) = O + U*U/(4.*F)*XDir + U*YDir
+          where: P is the point of parameter U,
+          O, XDir and YDir are respectively the origin, "X Direction"
+          and "Y Direction" of its local coordinate system,
+          F is the focal length of the parabola. Note that Xdir defines
+          the axis of symmetry, not the standard "x-axis".
+
         returns:
         Resultant new geometry object
         """
