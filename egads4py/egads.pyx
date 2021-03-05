@@ -238,21 +238,21 @@ cdef class context:
         return
 
     def setOutLevel(self, int outlevel):
-        '''
+        """
         Set output level
 
         Parameters
         ----------
         outlevel: 0 <= outlevel <= 2
-        '''
+        """
         EG_setOutLevel(self.context, outlevel)
 
     def makeTransform(self, xform):
-        '''
+        """
         Creates a TRANSFORM object from the 12 values. The rotation
         portion [3][3] must be “scaled” orthonormal (orthogonal with a
         single scale factor).
-        '''
+        """
         cdef int stat
         cdef double T[12]
         for i in range(12):
@@ -265,7 +265,7 @@ cdef class context:
 
     def makeGeometry(self, int oclass, int mtype,
                      pyego geom=None, idata=None, rdata=None):
-        '''
+        """
         Creates a geometric object:
 
         Parameters
@@ -294,7 +294,7 @@ cdef class context:
 
         returns:
         Resultant new geometry object
-        '''
+        """
         cdef int stat
         cdef ego refptr = NULL
         cdef int *iptr = NULL
@@ -345,7 +345,7 @@ cdef class context:
 
     def makeTopology(self, int oclass, int mtype=0, pyego geom=None,
                      children=None, sens=None, rdata=None):
-        '''
+        """
         Creates and returns a topological object:
 
         Parameters
@@ -380,7 +380,7 @@ cdef class context:
 
         returns:
         the resultant returned topological object
-        '''
+        """
         cdef int stat
         cdef ego refptr = NULL
         cdef double data[4]
@@ -451,7 +451,7 @@ cdef class context:
         return new_obj
 
     def makeLoop(self, list edges, pyego geom=None, double toler=0.0):
-        '''
+        """
         Creates a LOOP from a list of EDGE Objects, where the EDGEs do
         not have to be topologically connected. The tolerance is used
         to build the NODEs for the LOOP. The orientation is set by the
@@ -476,7 +476,7 @@ cdef class context:
         obj: the resultant LOOP Object
         nedges: the number of non-None entries in edges when returned
         or error code
-        '''
+        """
         cdef int nloop_edges = 0
         cdef int nedges
         cdef ego *edgs = NULL
@@ -499,7 +499,7 @@ cdef class context:
         return new_obj, nloop_edges
 
     def makeFace(self, pyego obj, int mtype, rdata=None):
-        '''
+        """
         Creates a simple FACE from a LOOP or a SURFACE. Also can be
         used to hollow a single LOOPed existing FACE. This function
         screates any required NODEs, EDGEs and LOOPs.
@@ -525,7 +525,7 @@ cdef class context:
         EGADS_OUTSIDE is the indication that offset distance was too
         large to produce any cutouts, and this result is the input
         object)
-        '''
+        """
         cdef int stat
         cdef double data[4]
         cdef double *ptr = NULL
@@ -548,7 +548,7 @@ cdef class context:
         return new_obj
 
     def makeSolidBody(self, int stype, rdata=None):
-        '''
+        """
         Creates a simple SOLIDBODY. Can be either a box, cylinder,
         sphere, cone, or torus.
 
@@ -568,7 +568,7 @@ cdef class context:
 
         returns:
         the resultant returned topological BODY object
-        '''
+        """
         cdef int stat
         cdef double *rptr = NULL
         rvec = []
@@ -587,7 +587,7 @@ cdef class context:
         return body
 
     def sewFaces(self, list objlist, double toler=0.0, manifold=True):
-        '''
+        """
         Creates a MODEL from a collection of Objects. The Objects can
         be either BODYs (not WIREBODY), SHELLs and/or FACEs. After the
         sewing operation, any unconnected Objects are returned as
@@ -607,7 +607,7 @@ cdef class context:
 
         returns:
         The resultant MODEL object
-        '''
+        """
         cdef int nobj
         cdef ego *objs
         cdef int flag = 1
@@ -628,7 +628,7 @@ cdef class context:
         return None
 
     def loadModel(self, fname, split=False):
-        '''
+        """
         Loads a MODEL object from a file
 
         Parameters
@@ -637,7 +637,7 @@ cdef class context:
         split:     split closed/periodic entries
 
         returns:   the MODEL object
-        '''
+        """
         cdef int stat
         cdef int bflag = 1
         cdef char *filename = NULL
@@ -651,7 +651,7 @@ cdef class context:
         return new_obj
 
     def blend(self, list sections, list _rc1=None, list _rc2=None):
-        '''
+        """
         Simply lofts the input Objects to create a BODY Object (that
         has the type SOLIDBODY or SHEETBODY). Cubic BSplines are
         used. All sections must have the same number of Edges (except
@@ -684,7 +684,7 @@ cdef class context:
         for other sections -- setting tangency (4 in length):
         magnitude, unit direction for FACEs with 2 or 3 EDGEs -- make
         a Wing Tip-like cap: zero, growthFactor (len of 2)
-        '''
+        """
         cdef int stat
         cdef int nsec
         cdef ego *secs
@@ -712,7 +712,7 @@ cdef class context:
         return new_obj
 
     def ruled(self, list sections):
-        '''
+        """
         Produces a BODY Object (that has the type SOLIDBODY or SHEETBODY)
         that goes through the sections by ruled surfaces between each. All
         sections must have the same number of Edges (except for NODEs) and
@@ -730,7 +730,7 @@ cdef class context:
 
         Note: for both blend and ruled all Loops must have their Edges
         ordered in a counterclockwise manner.
-        '''
+        """
         cdef int stat
         cdef int nsec
         cdef ego *secs
@@ -747,7 +747,7 @@ cdef class context:
 
     def approximate(self, xyz, int dim1=-1, int maxdeg=3,
                     double tol=0.0):
-        '''
+        """
         Computes and returns the resultant geometry object created by
         approximating the data by a BSpline (OCC or EGADS method).
 
@@ -775,7 +775,7 @@ cdef class context:
         Returns
         -------
         the returned approximated (or fit) BSpline resultant object
-        '''
+        """
         cdef int stat
         cdef int sizes[2]
         cdef double *xyz_array = NULL
@@ -816,28 +816,50 @@ cdef class pyego:
         return
 
     def isSame(self, pyego obj):
-        '''
+        """
         Compares two objects for geometric equivalence.
 
         Parameters
         ----------
         obj: an object to compare with
-        '''
+        """
         cdef int stat = 0
         stat = EG_isSame(self.ptr, obj.ptr)
         if stat == EGADS_SUCCESS:
             return True
         return False
 
+    def otherCurve(self, pyego surf, double tol=1e-6):
+        """
+        Computes and returns the other curve that matches the input curve.
+        If the input curve is a PCURVE, the output is a 3D CURVE (and vice versa).
+        This object is the input PCURVE or CURVE object
+
+        Parameters
+        ----------
+        surf: the SURFACE object used for the conversion
+        tol: is the tolerance to use when fitting the output curve
+
+        Returns
+        -------
+        the returned approximated resultant curve object
+        """
+        cdef int stat = 0
+        new_obj = pyego(self.ctx)
+        stat = EG_otherCurve(surf.ptr, self.ptr, tol, &new_obj.ptr)
+        if stat:
+            _checkErr(stat)
+        return new_obj
+
     def getInfo(self):
-        '''
+        """
         Return information about the object
 
         Returns
         -------
         oclass:  object class type
         mtype:   object sub-type
-        '''
+        """
         cdef int stat
         cdef int oclass
         cdef int mtype
@@ -850,14 +872,14 @@ cdef class pyego:
         return oclass, mtype
 
     def getInfoStr(self):
-        '''Get a string representation of the class type'''
+        """Get a string representation of the class type"""
         oclass, mtype = self.getInfo()
         return oclass_str[oclass]
 
     def saveModel(self, fname, overwrite=False):
-        '''
+        """
         Saves the model based on the filename extension
-        '''
+        """
         cdef int stat
         cdef char* filename = egads_convert_to_chars(fname)
         if overwrite and os.path.exists(filename):
@@ -867,12 +889,12 @@ cdef class pyego:
             _checkErr(stat)
 
     def getTransform(self):
-        '''
+        """
         Returns the transformation information. This appears like is a
         column- major matrix that is 4 columns by 3 rows and could be
         thought of as [3][4] in C (though is flat) and in FORTRAN
         dimensioned as (4,3).
-        '''
+        """
         cdef int stat
         cdef double T[12]
         stat = EG_getTransformation(self.ptr, T)
@@ -884,9 +906,9 @@ cdef class pyego:
         return xform
 
     def copy(self):
-        '''
+        """
         Creates a new EGADS object by copying.
-        '''
+        """
         cdef int stat
         new_obj = pyego(self.ctx)
         stat = EG_copyObject(self.ptr, NULL, &new_obj.ptr)
@@ -895,7 +917,7 @@ cdef class pyego:
         return new_obj
 
     def flip(self):
-        '''
+        """
         Creates a new EGADS object by copying and reversing the input
         object.
 
@@ -905,7 +927,7 @@ cdef class pyego:
         the input object: 3D geometry (flip the parameterization) or
         topology (reverse the sense). Not for NODE, BODY or
         MODEL. SURFACEs reverse only the u parameter.
-        '''
+        """
         cdef int stat
         flip = pyego(self.ctx)
         stat = EG_flipObject(self.ptr, &flip.ptr)
@@ -914,7 +936,7 @@ cdef class pyego:
         return flip
 
     def getGeometry(self):
-        '''
+        """
         Returns information about the geometric object:
 
         Returns
@@ -926,21 +948,22 @@ cdef class pyego:
         SURFACE
         . PLANE, SPHERICAL, CYLINDRICAL, REVOLUTION, TORIODAL,
         TRIMMED, BEZIER, BSPLINE, OFFSET, CONICAL, EXTRUSION
-        '''
+        refgeo: the reference geometry
+        """
         cdef int stat
         cdef int oclass
         cdef int mtype
         cdef int *ivec = NULL
         cdef double *rvec = NULL
-        cdef ego refgeo
-        stat = EG_getGeometry(self.ptr, &oclass, &mtype, &refgeo,
+        refgeo = pyego(self.ctx)
+        stat = EG_getGeometry(self.ptr, &oclass, &mtype, &refgeo.ptr,
                               &ivec, &rvec)
         if stat:
             _checkErr(stat)
-        return oclass, mtype
+        return oclass, mtype, refgeo
 
     def getRange(self):
-        '''
+        """
         Returns the valid range of the object: may be one of PCURVE,
         CURVE, SURFACE, EDGE or FACE
 
@@ -954,7 +977,7 @@ cdef class pyego:
         periodic:
         0 for non-periodic, 1 for periodic in t or u 2 for periodic in
         v (or-able)
-        '''
+        """
         cdef int stat
         cdef double r[4]
         cdef int periodic
@@ -975,13 +998,13 @@ cdef class pyego:
         return None
 
     def getBoundingBox(self):
-        '''
+        """
         Computes the Cartesian bounding box around the object:
 
         Returns
         -------
         the [x,y,z] min and [x,y,z] max
-        '''
+        """
         cdef int stat
         cdef double data[6]
         stat = EG_getBoundingBox(self.ptr, data)
@@ -989,8 +1012,30 @@ cdef class pyego:
             _checkErr(stat)
         return [data[0], data[1], data[2]], [data[3], data[4], data[5]]
 
+    def getMassProperties(self):
+        """
+        Computes and returns the physical and inertial properties
+        of a topological object.
+
+        The object, can be EDGE, LOOP, FACE, SHELL or BODY data
+
+        Returns:
+        volume, surface area (length for EDGE, LOOP or WIREBODY) center of gravity (3)
+        inertia matrix at CoG (9)
+        """
+        cdef int stat
+        cdef double data[14]
+        stat = EG_getMassProperties(self.ptr, data)
+        if stat:
+            _checkErr(stat)
+
+        rdata = []
+        for i in range(14):
+            rdata.append(data[i])
+        return rdata
+
     def evaluate(self, p):
-        '''
+        """
         Returns the result of evaluating the object at a parameter
         point. May be used for PCURVE, CURVE, SURFACE, EDGE or FACE.
 
@@ -1003,7 +1048,7 @@ cdef class pyego:
         Returns:
         For PCURVE, CURVE, EDGE: X, X,t and X,tt
         For SURFACE, FACE: X, [X,u, X,v], [X,uu, X,uv, X,vv]
-        '''
+        """
         cdef int stat
         cdef double param[2]
         cdef double r[18]
@@ -1034,7 +1079,7 @@ cdef class pyego:
         return None
 
     def invEvaluate(self, xyz):
-        '''
+        """
         Returns the result of inverse evaluation on the object. For
         topology the result is limited to inside the EGDE/FACE valid
         bounds. The object may be one of PCURVE, CURVE, SURFACE, EDGE
@@ -1050,7 +1095,7 @@ cdef class pyego:
         for SURFACE or FACE the 2 values are u then v the closest
         position found is returned:
         [u,v] for a PCURVE (2) and [x,y,z] for all others (3)
-        '''
+        """
         cdef int stat
         cdef double xp[3]
         cdef double params[2]
@@ -1078,9 +1123,9 @@ cdef class pyego:
         return None, None
 
     def getTolerance(self):
-        '''
+        """
         Get the tolerance associated with this object
-        '''
+        """
         cdef int stat
         cdef double tol
         stat = EG_getTolerance(self.ptr, &tol)
@@ -1089,18 +1134,18 @@ cdef class pyego:
         return tol
 
     def setTolerance(self, double tol):
-        '''
+        """
         Set the tolerance associated with this object
-        '''
+        """
         cdef int stat
         stat = EG_setTolerance(self.ptr, tol)
         if stat:
             _checkErr(stat)
 
     def getBody(self):
-        '''
+        """
         Get the body that this object is contained within
-        '''
+        """
         cdef int stat
         body = pyego(self.ctx)
         stat = EG_getBody(self.ptr, &body.ptr)
@@ -1109,9 +1154,9 @@ cdef class pyego:
         return body
 
     def getArea(self, limits=None):
-        '''
+        """
         Get the area of the geometric object
-        '''
+        """
         cdef int stat
         cdef double lim[4]
         cdef double area
@@ -1124,7 +1169,7 @@ cdef class pyego:
         return area
 
     def attributeAdd(self, aname, int atype, data):
-        '''
+        """
         Adds an attribute to the object. If an attribute exists with
         the name it is overwritten with the new information.
 
@@ -1141,7 +1186,7 @@ cdef class pyego:
         ATTRREAL for double precision
         ATTRSTRING for a character string
         ATTRCSYS for a coordinate system (use reals for input)
-        '''
+        """
         cdef int stat
         cdef int length = 0
         cdef int *ints = NULL
@@ -1183,10 +1228,10 @@ cdef class pyego:
         return
 
     def attributeDel(self, aname=None):
-        '''
+        """
         Deletes an attribute from the object. If the name is NULL then
         all attributes are removed from this object
-        '''
+        """
         cdef int stat
         cdef char *name = NULL
         if name is not None:
@@ -1199,9 +1244,9 @@ cdef class pyego:
         return
 
     def attributeNum(self):
-        '''
+        """
         Returns the number of attributes found with this object
-        '''
+        """
         cdef int stat
         cdef int num
         stat = EG_attributeNum(self.ptr, &num)
@@ -1210,9 +1255,9 @@ cdef class pyego:
         return num
 
     def attributeGet(self, int index):
-        '''
+        """
         Retrieves a specific attribute from the object
-        '''
+        """
         cdef int stat
         cdef const char *name
         cdef int atype
@@ -1242,9 +1287,9 @@ cdef class pyego:
         return None
 
     def attributeRet(self, aname):
-        '''
+        """
         Retrieves a specific attribute from the object
-        '''
+        """
         cdef int stat
         cdef int atype
         cdef int length
@@ -1275,10 +1320,10 @@ cdef class pyego:
         return None
 
     def attributeDup(self, pyego dup):
-        '''
+        """
         Removes all attributes from the destination object, then copies the
         attributes from the source
-        '''
+        """
         cdef int stat
         stat = EG_attributeDup(self.ptr, dup.ptr)
         if stat:
@@ -1286,7 +1331,7 @@ cdef class pyego:
         return
 
     def getTopology(self):
-        '''
+        """
         Returns information about the topological object
 
         Returns
@@ -1318,7 +1363,7 @@ cdef class pyego:
         sens:
         is the returned pointer to a block of integer senses for
         the children.
-        '''
+        """
         cdef int stat
         cdef ego geom = NULL
         cdef int oclass
@@ -1354,14 +1399,14 @@ cdef class pyego:
         return geo, oclass, mtype, lim, children, sens
 
     def getChildren(self):
-        '''
+        """
         Returns a list of the children from the object
 
         Returns
         -------
         children:
         is a returned pointer to the block of children objects.
-        '''
+        """
         cdef int stat
         cdef ego geom = NULL
         cdef int oclass
@@ -1383,7 +1428,7 @@ cdef class pyego:
         return children
 
     def getBodyTopos(self, int oclass, pyego ref=None):
-        '''
+        """
         Returns topologically connected objects:
 
         Parameters
@@ -1402,7 +1447,7 @@ cdef class pyego:
         -------
         the returned number of requested topological objects is a
         returned pointer to the block of objects
-        '''
+        """
 
         cdef int stat
         cdef ego src = NULL
@@ -1427,7 +1472,7 @@ cdef class pyego:
         return tlist
 
     def matchBodyFaces(self, pyego body, double toler):
-        '''
+        """
         Examines the FACEs in one BODY against all of the FACEs in
         another. If the number of LOOPs, number of NODEs, the NODE
         locations, the number of EDGEs and the EDGE bounding boxes as
@@ -1450,7 +1495,7 @@ cdef class pyego:
         glancing FACEs and a UNION operation fails (or would
         fail). Simply find the matching FACEs and do not include them
         in a call to EG_sewFaces.
-        '''
+        """
         cdef int stat
         cdef ego body1 = NULL
         cdef ego body2 = NULL
@@ -1476,13 +1521,13 @@ cdef class pyego:
         return None
 
     def indexBodyTopo(self, pyego src):
-        '''
+        """
         Return the (1-based) index of the topological object in the body
-        '''
+        """
         return EG_indexBodyTopo(self.ptr, src.ptr)
 
     def solidBoolean(self, pyego tool, int oper):
-        '''
+        """
         Performs the Solid Boolean Operations (SBOs) on the source
         BODY Object (that has the type SOLIDBODY). The tool object
         types depend on the operation. This supports Intersection,
@@ -1507,7 +1552,7 @@ cdef class pyego:
         the resultant MODEL object (this is because there may be
         multiple bodies from either the subtraction or intersection
         operation).
-        '''
+        """
         cdef int stat
         new_obj = pyego(self.ctx)
         stat = EG_solidBoolean(self.ptr, tool.ptr, oper, &new_obj.ptr)
@@ -1516,7 +1561,7 @@ cdef class pyego:
         return new_obj
 
     def intersection(self, pyego tool):
-        '''
+        """
         Intersects the source BODY Object (that has the type
         SOLIDBODY, SHEETBODY or FACEBODY) with a surface or
         surfaces. The tool object contains the intersecting geometry
@@ -1540,7 +1585,7 @@ cdef class pyego:
 
         pairs:
         List of the FACE/EDGE object pairs - 2*nEdge in len.
-        '''
+        """
         cdef int stat
         cdef int nobj
         cdef ego *faceEdgePairs = NULL
@@ -1567,7 +1612,7 @@ cdef class pyego:
         return new_obj, pairs
 
     def imprintBody(self, list pairs):
-        '''
+        """
         Imprints EDGE/LOOPs on the source BODY Object (that has the type
         SOLIDBODY, SHEETBODY or FACEBODY). The EDGE/LOOPs are
         paired with the FACEs in the source that will be scribed with the
@@ -1585,7 +1630,7 @@ cdef class pyego:
         the resultant BODY object (with the same type as the input source
         object, though the splitting of FACEBODY objects results in a
         SHEETBODY)
-        '''
+        """
         cdef int stat
         cdef nobj = 0
         cdef ego* objs = NULL
@@ -1601,7 +1646,7 @@ cdef class pyego:
         return new_obj
 
     def filletBody(self, list edges, double radius):
-        '''
+        """
         Fillets the EDGEs on the source BODY Object (that has the type
         SOLIDBODY or SHEETBODY).
 
@@ -1614,7 +1659,7 @@ cdef class pyego:
         -------
         the resultant BODY object (with the same type as the input
         source object)
-        '''
+        """
         cdef int stat
         cdef nedges = 0
         cdef ego* edgs = NULL
@@ -1633,7 +1678,7 @@ cdef class pyego:
         return new_obj
 
     def extrude(self, double dist, _dir):
-        '''
+        """
         Extrudes the source Object through the distance specified.
         If the Object is either a LOOP or WIREBODY the result is a
         SHEETBODY. If the source is either a FACE or FACEBODY then
@@ -1649,7 +1694,7 @@ cdef class pyego:
         -------
         the resultant BODY object (type is one greater than the
         input source object)
-        '''
+        """
         cdef int stat
         cdef double direction[3]
         for i in range(3):
@@ -1661,7 +1706,7 @@ cdef class pyego:
         return new_obj
 
     def rotate(self, double angle, _axis):
-        '''
+        """
         Rotates the source Object about the axis through the angle
         specified. If the Object is either a LOOP or WIREBODY the
         result is a SHEETBODY. If the source is either a FACE or
@@ -1676,7 +1721,7 @@ cdef class pyego:
         -------
         the resultant BODY object (type is one greater than the input
         source object)
-        '''
+        """
         cdef int stat
         cdef double axis[6]
         for i in range(6):
@@ -1688,7 +1733,7 @@ cdef class pyego:
         return new_obj
 
     def sweep(self, pyego spline, int mode):
-        '''
+        """
         Sweeps the source Object through the “spine” specified. The
         spine can be either an EDGE, LOOP or WIREBODY. If the source
         Object is either a LOOP or WIREBODY the result is a
@@ -1701,7 +1746,7 @@ cdef class pyego:
         source through
 
         mode: Integer indicating the mode
-        '''
+        """
         cdef int stat
         new_obj = pyego(self.ctx)
         stat = EG_sweep(self.ptr, spline.ptr, mode, &new_obj.ptr)

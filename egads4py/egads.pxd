@@ -208,8 +208,8 @@ cdef extern from "egads.h":
                           int ntris, const int *tris,
                           const int *tric, double tol,
                           ego *bspline )
-    # int  EG_otherCurve( const ego surface, const ego curve,
-    #                     double tol, ego *newcurve )
+    int  EG_otherCurve( const ego surface, const ego curve,
+                        double tol, ego *newcurve )
     int  EG_isSame( const ego geom1, const ego geom2 )
     # int  EG_isoCline( const ego surface, int UV, double val,
     #                   ego *newcurve )
@@ -243,7 +243,7 @@ cdef extern from "egads.h":
     int  EG_makeSolidBody( ego context, int stype, const double *rvec,
                            ego *body )
     int  EG_getBoundingBox( const ego topo, double *bbox )
-    # int  EG_getMassProperties( const ego topo, double *result )
+    int  EG_getMassProperties( const ego topo, double *result )
     # int  EG_isEquivalent( const ego topo1, const ego topo2 )
     int  EG_sewFaces( int nobj, const ego *objs, double toler,
                      int flag, ego *result )

@@ -46,36 +46,36 @@
   extern "C" int  EG_intersection( const egObject *src, const egObject *tool,
                                    int *nedge, /*@null@*/ egObject ***facEdg,
                                    egObject **model );
-  extern "C" int  EG_imprintBody( const egObject *src, int nedge, 
+  extern "C" int  EG_imprintBody( const egObject *src, int nedge,
                                   const egObject **facEdg, egObject **result );
-  extern "C" int  EG_filletBody( const egObject *src, int nedge, 
+  extern "C" int  EG_filletBody( const egObject *src, int nedge,
                                  const egObject **edges, double radius,
                                        egObject **result, int **faceMap );
-  extern "C" int  EG_chamferBody( const egObject *src, int nedge, 
-                                  const egObject **edges, const egObject **faces, 
+  extern "C" int  EG_chamferBody( const egObject *src, int nedge,
+                                  const egObject **edges, const egObject **faces,
                                   double dis1, double dis2, egObject **result,
                                   int **faceMap );
-  extern "C" int  EG_hollowBody( const egObject *src, int nface, 
+  extern "C" int  EG_hollowBody( const egObject *src, int nface,
                                  const egObject **faces, double offset, int join,
                                        egObject **result, int **faceMap );
-  extern "C" int  EG_extrude( const egObject *src, double dist, 
+  extern "C" int  EG_extrude( const egObject *src, double dist,
                               const double *dir, egObject **result );
-  extern "C" int  EG_rotate( const egObject *src, double angle, 
+  extern "C" int  EG_rotate( const egObject *src, double angle,
                              const double *axis, egObject **result );
   extern "C" int  EG_sweep( const egObject *src, const egObject *spine, int mode,
                                   egObject **result );
-  extern "C" int  EG_loft( int nsec, const egObject **secs, int opt, 
+  extern "C" int  EG_loft( int nsec, const egObject **secs, int opt,
                                            egObject **result );
 
-  extern     int  EG_traverseBody( egObject *context, int i, egObject *bobj, 
+  extern     int  EG_traverseBody( egObject *context, int i, egObject *bobj,
                                    egObject *topObj, egadsBody *body,
                                    int *nerr );
   extern     int  EG_attriBodyDup( const egObject *src, egObject *dst );
   extern     void EG_completePCurve( egObject *g, Handle(Geom2d_Curve) &hCurv );
   extern     void EG_completeSurf(   egObject *g, Handle(Geom_Surface) &hSurf );
-     
 
-// for trapping SegFaults                                                                 
+
+// for trapping SegFaults
 static jmp_buf jmpenv;
 
 static void
@@ -90,7 +90,7 @@ EG_attrFixup(int outLevel, egObject *body, const egObject *src)
 {
   int      i, j, na, stat, nface, nfsrc;
   egObject **faces, **fsrcs;
-  
+
   stat = EG_getBodyTopos(body, NULL, FACE, &nface, &faces);
   if (stat != EGADS_SUCCESS) {
     printf(" EGADS Internal EG_attrFixup: EG_getBodyTopos body = %d!\n", stat);
@@ -102,7 +102,7 @@ EG_attrFixup(int outLevel, egObject *body, const egObject *src)
     EG_free(faces);
     return;
   }
-  
+
   for (j = 0; j < nface; j++) {
     stat = EG_attributeNum(faces[j], &na);
     if (stat != EGADS_SUCCESS) {
@@ -111,7 +111,7 @@ EG_attrFixup(int outLevel, egObject *body, const egObject *src)
       continue;
     }
     if (na != 0) continue;
-    
+
     for (i = 0; i < nfsrc; i++) {
       stat = EG_isSame(faces[j], fsrcs[i]);
       if (stat == EGADS_SUCCESS) {
@@ -127,7 +127,7 @@ EG_attrFixup(int outLevel, egObject *body, const egObject *src)
       }
     }
   }
-  
+
   EG_free(fsrcs);
   EG_free(faces);
 }
@@ -135,7 +135,7 @@ EG_attrFixup(int outLevel, egObject *body, const egObject *src)
 
 static void
 EG_matchMdlFace(BRepAlgoAPI_BooleanOperation& BSO, TopoDS_Shape src,
-                int iface, TopoDS_Shape tool, TopoDS_Shape result, 
+                int iface, TopoDS_Shape tool, TopoDS_Shape result,
                 int **mapping)
 {
   int                        i, j, nf, *map;
@@ -147,7 +147,7 @@ EG_matchMdlFace(BRepAlgoAPI_BooleanOperation& BSO, TopoDS_Shape src,
   TopExp::MapShapes(src,    TopAbs_FACE, smap);
   nf = rmap.Extent();
   if (nf == 0) return;
-  
+
   map = (int *) EG_alloc(nf*sizeof(int));
   if (map == NULL) return;
   for (i = 0; i < nf; i++) map[i] = 0;
@@ -175,9 +175,9 @@ EG_matchMdlFace(BRepAlgoAPI_BooleanOperation& BSO, TopoDS_Shape src,
       if (j > 0) map[j-1] = i;
     }
   }
-  
+
   if (iface == 0) {
-  
+
     TopExp::MapShapes(tool, TopAbs_FACE, tmap);
     for (i = 1; i <= tmap.Extent(); i++) {
       face = TopoDS::Face(tmap(i));
@@ -233,7 +233,7 @@ EG_matchFaces(BRepAlgoAPI_BooleanOperation& BSO, const egObject *src,
   TopoDS_Shape    solid;
   TopoDS_Face     face, genface;
   TopExp_Explorer Exp;
-  
+
   *mapping = NULL;
   pbods    = (egadsBody *) src->blind;
   if (((tool->oclass == FACE) ||
@@ -329,7 +329,7 @@ EG_matchFaces(BRepAlgoAPI_BooleanOperation& BSO, const egObject *src,
         }
       }
     }
-    
+
   } else {
 
     egadsFace *pface = (egadsFace *) oface->blind;
@@ -376,47 +376,47 @@ EG_matchFaces(BRepAlgoAPI_BooleanOperation& BSO, const egObject *src,
 
 
 static int
-EG_modelBoolean(const egObject *src, const egObject *tool, int oper, 
+EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
                       egObject **model)
 {
   int            i, j, k, stat, outLevel, iface, index, nerr, *fmap = NULL;
   egObject       *context, *omodel;
   TopoDS_Shape   result;
   const egObject *face = NULL;
-  
+
   if (src->blind == NULL) return EGADS_NODATA;
   outLevel = EG_outLevel(src);
   context  = EG_context(src);
-  
+
   if ((oper != INTERSECTION) && (oper != FUSION)) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: BAD Operator = %d (EG_solidBoolean)!\n",
              oper);
     return EGADS_RANGERR;
   }
   if (tool == NULL) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: NULL Tool (EG_solidBoolean)!\n");
     return EGADS_NULLOBJ;
   }
   if (tool->magicnumber != MAGIC) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Tool is not an EGO (EG_solidBoolean)!\n");
     return EGADS_NOTOBJ;
   }
   if (tool->blind == NULL) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Tool has no data (EG_solidBoolean)!\n");
     return EGADS_NODATA;
   }
   if (EG_context(tool) != context) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Context mismatch (EG_solidBoolean)!\n");
     return EGADS_MIXCNTX;
   }
   egadsModel      *pmdl = (egadsModel *) src->blind;
   TopoDS_Compound ssrc  = TopoDS::Compound(pmdl->shape);
-  
+
   if (oper == FUSION) {
 
     if  ((tool->oclass != FACE) &&
@@ -431,17 +431,17 @@ EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
       face = pbodf->faces.objs[0];
     }
     if (face == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: NULL Face Tool (EG_solidBoolean)!\n");
       return EGADS_NULLOBJ;
     }
     if (face->magicnumber != MAGIC) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Face Tool is not an EGO (EG_solidBoolean)!\n");
       return EGADS_NOTOBJ;
     }
     if (face->blind == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Face Tool has no data (EG_solidBoolean)!\n");
       return EGADS_NODATA;
     }
@@ -466,7 +466,7 @@ EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
       if (stat != 0) {
         // extend the tool face and try again
         Handle(Geom_Surface) hSurf = BRep_Tool::Surface(pface->face);
-#if CASVER >= 652        
+#if CASVER >= 652
         BRepLib_MakeFace MFace(hSurf, Standard_True);
 #else
         BRepLib_MakeFace MFace(hSurf);
@@ -478,7 +478,7 @@ EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
         Sec.Approximation(Standard_True);
         Sec.Build();
         if (!Sec.IsDone()) {
-          if (outLevel > 0) 
+          if (outLevel > 0)
             printf(" EGADS Error: Can't Section (EG_solidBoolean)!\n");
           return EGADS_GEOMERR;
         }
@@ -493,7 +493,7 @@ EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
         }
         Split.Build();
         if (!Split.IsDone()) {
-          if (outLevel > 0) 
+          if (outLevel > 0)
             printf(" EGADS Error: Can't Split (EG_solidBoolean)!\n");
           return EGADS_GEOMERR;
         }
@@ -506,7 +506,7 @@ EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
         if (splmap.Extent() != 0) {
           spltab = (int *) EG_alloc(splmap.Extent()*sizeof(int));
           if (spltab == NULL) {
-            if (outLevel > 0) 
+            if (outLevel > 0)
               printf(" EGADS Error: Malloc of Split Table (EG_solidBoolean)!\n");
             return EGADS_MALLOC;
           }
@@ -555,7 +555,7 @@ EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
               fmap[i] = spltab[fmap[i]-1];
               continue;
             }
-//        for (i = 0; i < rmap.Extent(); i++) printf("  map %d = %d\n", i+1, fmap[i]);  
+//        for (i = 0; i < rmap.Extent(); i++) printf("  map %d = %d\n", i+1, fmap[i]);
           EG_free(spltab);
         }
       } else {
@@ -572,17 +572,17 @@ EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
     catch (...) {
       printf(" EGADS Error: SBO Fusion Exception (EG_solidBoolean)!\n");
       return EGADS_GEOMERR;
-    }    
-    
+    }
+
   } else {
 
     if (tool->oclass != BODY) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Tool is not a Body (EG_solidBoolean)!\n");
       return EGADS_NOTBODY;
     }
     if (tool->mtype != SOLIDBODY) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Tool is not a Solid Body (EG_solidBoolean)!\n");
       return EGADS_NOTTOPO;
     }
@@ -610,7 +610,7 @@ EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
     }
 
   }
-  
+
   int nWire  = 0;
   int nFace  = 0;
   int nSheet = 0;
@@ -626,7 +626,7 @@ EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
   if (outLevel > 1)
     printf(" Info: result has %d Solids, %d Sheets, %d Faces and %d Wires\n",
            nSolid, nSheet, nFace, nWire);
-         
+
   int nBody = nWire+nFace+nSheet+nSolid;
   if (nBody == 0) {
     result.Nullify();
@@ -634,7 +634,7 @@ EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
       printf(" EGADS Warning: Nothing found in result (EG_solidBoolean)!\n");
     return EGADS_NODATA;
   }
-  
+
   egadsModel *mshape = new egadsModel;
   mshape->shape      = result;
   mshape->nbody      = nBody;
@@ -663,9 +663,9 @@ EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
     pbody->senses      = NULL;
     pobj->blind        = pbody;
   }
-  
+
   i = 0;
-  for (Exp.Init(mshape->shape, TopAbs_WIRE,  TopAbs_FACE); 
+  for (Exp.Init(mshape->shape, TopAbs_WIRE,  TopAbs_FACE);
        Exp.More(); Exp.Next()) {
     egObject  *obj   = mshape->bodies[i++];
     egadsBody *pbody = (egadsBody *) obj->blind;
@@ -709,7 +709,7 @@ EG_modelBoolean(const egObject *src, const egObject *tool, int oper,
   TopTools_IndexedMapOfShape smap, rmap;
   TopExp::MapShapes(ssrc,   TopAbs_FACE, smap);
   TopExp::MapShapes(result, TopAbs_FACE, rmap);
-  
+
   for (i = 0; i < nBody; i++) {
     egObject  *pobj  = mshape->bodies[i];
     egadsBody *pbody = (egadsBody *) pobj->blind;
@@ -905,7 +905,7 @@ EG_unionMatch(const egObject *src, const egObject *tool, egObject **model)
       }
     }
   }
-  
+
   // any matched Faces?
   for (i = 0; i < ntf; i++) emap[i] = 0;
   for (j = i = 0; i < nsf; i++) {
@@ -918,7 +918,7 @@ EG_unionMatch(const egObject *src, const egObject *tool, egObject **model)
     EG_free(fmap);
     return EGADS_EMPTY;
   }
-  
+
   // take the faces that don't match up and sew them together
   k = nsf + ntf - 2*j;
   const egObject **faces = (const egObject **) EG_alloc(k*sizeof(egObject *));
@@ -939,7 +939,7 @@ EG_unionMatch(const egObject *src, const egObject *tool, egObject **model)
   }
   EG_free(emap);
   EG_free(fmap);
-  
+
   int stat = EG_sewFaces(k, faces, 0.0, 0, model);
   if (outLevel > 1)
     printf(" EGADS Info: EG_sewFaces = %d (EG_unionMatch)!\n", stat);
@@ -949,7 +949,7 @@ EG_unionMatch(const egObject *src, const egObject *tool, egObject **model)
 
 
 int
-EG_solidBoolean(const egObject *src, const egObject *tool, int oper, 
+EG_solidBoolean(const egObject *src, const egObject *tool, int oper,
                       egObject **model)
 {
   int             i, j, outLevel, index, stat, hit, nerr, rev = 0;
@@ -959,7 +959,7 @@ EG_solidBoolean(const egObject *src, const egObject *tool, int oper,
   egadsBody       *pbodt = NULL;
   TopoDS_Shape    stool, result;
   TopExp_Explorer Exp;
-  
+
   *model = NULL;
   if (src == NULL)               return EGADS_NULLOBJ;
   if (src->magicnumber != MAGIC) return EGADS_NOTOBJ;
@@ -970,30 +970,30 @@ EG_solidBoolean(const egObject *src, const egObject *tool, int oper,
   outLevel = EG_outLevel(src);
   context  = EG_context(src);
 
-  if ((oper != SUBTRACTION) && (oper != INTERSECTION) && 
+  if ((oper != SUBTRACTION) && (oper != INTERSECTION) &&
       (oper != FUSION)) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: BAD Operator = %d (EG_solidBoolean)!\n",
              oper);
     return EGADS_RANGERR;
   }
   if (tool == NULL) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: NULL Tool (EG_solidBoolean)!\n");
     return EGADS_NULLOBJ;
   }
   if (tool->magicnumber != MAGIC) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Tool is not an EGO (EG_solidBoolean)!\n");
     return EGADS_NOTOBJ;
   }
   if (tool->blind == NULL) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Tool has no data (EG_solidBoolean)!\n");
     return EGADS_NODATA;
   }
   if (EG_context(tool) != context) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Context mismatch (EG_solidBoolean)!\n");
     return EGADS_MIXCNTX;
   }
@@ -1006,28 +1006,28 @@ EG_solidBoolean(const egObject *src, const egObject *tool, int oper,
       face = pbodf->faces.objs[0];
     }
     if (face == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: NULL Face Tool (EG_solidBoolean)!\n");
       return EGADS_NULLOBJ;
     }
     if (face->magicnumber != MAGIC) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Face Tool is not an EGO (EG_solidBoolean)!\n");
       return EGADS_NOTOBJ;
     }
     if (face->blind == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Face Tool has no data (EG_solidBoolean)!\n");
       return EGADS_NODATA;
     }
   } else {
     if (tool->oclass != BODY) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Tool is not a Body (EG_solidBoolean)!\n");
       return EGADS_NOTBODY;
     }
 /*  if (tool->mtype != SOLIDBODY) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Tool is not a Solid Body (EG_solidBoolean)!\n");
       return EGADS_NOTTOPO;
     }  */
@@ -1047,7 +1047,7 @@ EG_solidBoolean(const egObject *src, const egObject *tool, int oper,
     builder3D.Add(shell, pface->face);
     stool = shell; */
   }
-  
+
   if (oper == INTERSECTION) {
 
     try {
@@ -1084,7 +1084,7 @@ EG_solidBoolean(const egObject *src, const egObject *tool, int oper,
       }
       rev = -1;
     }
-    
+
     if (rev == -1) {
       rev = 1;
       if (outLevel > 1)
@@ -1234,9 +1234,9 @@ EG_solidBoolean(const egObject *src, const egObject *tool, int oper,
         return EGADS_OCSEGFLT;
     }
     signal(SIGBUS, SIG_DFL);
-    
+
   }
- 
+
   int nBody = 0;
   for (Exp.Init(result, TopAbs_SOLID); Exp.More(); Exp.Next()) nBody++;
   if ((oper == FUSION) && (nBody == 2)) {
@@ -1275,7 +1275,7 @@ EG_solidBoolean(const egObject *src, const egObject *tool, int oper,
     }
     i++;
   }
-  
+
   egadsModel *mshape = new egadsModel;
   mshape->shape      = result;
   mshape->nbody      = nBody;
@@ -1334,7 +1334,7 @@ EG_solidBoolean(const egObject *src, const egObject *tool, int oper,
   omodel->oclass = MODEL;
   omodel->blind  = mshape;
   EG_referenceObject(omodel, context);
-  
+
   for (hit = i = 0; i < nBody; i++) {
     egObject  *pobj  = mshape->bodies[i];
     egadsBody *pbody = (egadsBody *) pobj->blind;
@@ -1373,19 +1373,19 @@ EG_solidBoolean(const egObject *src, const egObject *tool, int oper,
     }
   }
   if (fmap != NULL) EG_free(fmap);
-  
+
   if (hit != 0) {
     EG_deleteObject(omodel);
     return EGADS_TOPOERR;
   }
-  
+
   *model = omodel;
   return EGADS_SUCCESS;
 }
 
 
 int
-EG_intersection(const egObject *src, const egObject *tool, int *nEdge, 
+EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
                 /*@null@*/ egObject ***facEdg, egObject **model)
 {
   int             i, j, n, stat, outLevel, nloop, sense, index, found, nerr;
@@ -1396,7 +1396,7 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
   TopoDS_Shape    s1, result;
   TopoDS_Vertex   V1, V2, Vs, lV1, lV2;
   TopExp_Explorer Exp;
-  
+
   *nEdge = 0;
   *model = NULL;
   if (facEdg != NULL) *facEdg = NULL;
@@ -1410,22 +1410,22 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
   context  = EG_context(src);
 
   if (tool == NULL) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: NULL Tool (EG_intersection)!\n");
     return EGADS_NULLOBJ;
   }
   if (tool->magicnumber != MAGIC) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Tool is not an EGO (EG_intersection)!\n");
     return EGADS_NOTOBJ;
   }
   if (tool->blind == NULL) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Tool has no data (EG_intersection)!\n");
     return EGADS_NODATA;
   }
   if (EG_context(tool) != context) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Context mismatch (EG_intersection)!\n");
     return EGADS_MIXCNTX;
   }
@@ -1443,7 +1443,7 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
     }
   } else {
     if (tool->oclass != FACE) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Tool is not a Face or Body (EG_intersection)!\n");
       return EGADS_NOTBODY;
     }
@@ -1472,7 +1472,7 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
   Sec.Approximation(Standard_True);
   Sec.Build();
   if (!Sec.IsDone()) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Can't Section (EG_intersection)!\n");
     return EGADS_GEOMERR;
   }
@@ -1482,11 +1482,11 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
   TopExp::MapShapes(result, TopAbs_EDGE, MapE);
   int nedge = MapE.Extent();
   if (nedge == 0) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: No Intersection (EG_intersection)!\n");
     return EGADS_CONSTERR;
   }
-  
+
   // find the loops
   loopInfo *info = new loopInfo[nedge];
   for (i = 0; i <  nedge; i++) info[i].lIndex = info[i].sense = 0;
@@ -1530,7 +1530,7 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
           info[j-1].sense  = sense;
           V2 = lV1;
           break;
-        }      
+        }
       }
       if (j > nedge) {
         /* we are open -- check the other direction */
@@ -1564,7 +1564,7 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
               info[j-1].sense  = sense;
               V2 = lV1;
               break;
-            }      
+            }
           }
         }
         break;
@@ -1573,7 +1573,7 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
     nloop++;
   }
   nloop--;
-  
+
   // create the EGADS objects for the WireBodies
   egObject **wireo = new egObject*[nloop];
   for (i = 0; i < nloop; i++) {
@@ -1591,7 +1591,7 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
   TopoDS_Compound compound;
   BRep_Builder    builder3D;
   builder3D.MakeCompound(compound);
-  for (i = 0; i < nloop; i++) { 
+  for (i = 0; i < nloop; i++) {
     BRepBuilderAPI_MakeWire MW;
     index = 0;
     do {
@@ -1652,9 +1652,9 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
     }
   }
   delete [] info;
-  
+
   // fix up the WireBodies for PCurves on tool single Face
-  
+
   if (plane == 0) {
     egadsSurface *psurf = (egadsSurface *) geom->blind;
     Handle(Geom_Surface) hSurface = psurf->handle;
@@ -1670,7 +1670,7 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
         edgeo[j+ploop->nedges] = NULL;
       }
       delete [] ploop->edges;
-      ploop->edges = edgeo; 
+      ploop->edges = edgeo;
       stat = EG_makeObject(context, &sobj);
       if (stat != EGADS_SUCCESS) continue;
       sobj->topObj = bobj;
@@ -1711,7 +1711,7 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
       }
     }
   }
-  
+
   // Attach the Attributes
 
   for (i = 0; i < nloop; i++) {
@@ -1727,7 +1727,7 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
       }
     }
   }
-  
+
   // fill in the Face/Edge pairs (if requested)
   if (facEdg != NULL) {
     *facEdg = list = (egObject **) EG_alloc(2*nedge*sizeof(egObject *));
@@ -1750,7 +1750,7 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
       }
     *nEdge = n/2;
   }
-  
+
   // make the EGADS model
 
   egadsModel *mshape = new egadsModel;
@@ -1784,12 +1784,12 @@ EG_intersection(const egObject *src, const egObject *tool, int *nEdge,
 
 
 int
-EG_imprintBody(const egObject *src, int nedge, const egObject **facEdg, 
+EG_imprintBody(const egObject *src, int nedge, const egObject **facEdg,
                      egObject **result)
 {
   int      i, outLevel, stat, nerr;
   egObject *context, *obj;
-  
+
   *result = NULL;
   if  (src == NULL)               return EGADS_NULLOBJ;
   if  (src->magicnumber != MAGIC) return EGADS_NOTOBJ;
@@ -1799,31 +1799,31 @@ EG_imprintBody(const egObject *src, int nedge, const egObject **facEdg,
   if  (src->blind == NULL)        return EGADS_NODATA;
   outLevel = EG_outLevel(src);
   context  = EG_context(src);
-  
+
   if (nedge <= 0) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: No Edges (EG_imprintBody)!\n");
     return EGADS_NODATA;
   }
   if (facEdg == NULL) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: NULL facEdg Pointer (EG_imprintBody)!\n");
     return EGADS_NULLOBJ;
   }
   for (i = 0; i < 2*nedge; i++) {
     if (facEdg[i] == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: NULL Object %d (EG_imprintBody)!\n", i/2+1);
       return EGADS_NULLOBJ;
     }
     if (facEdg[i]->magicnumber != MAGIC) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Object %d is not an EGO (EG_imprintBody)!\n",
                i/2+1);
       return EGADS_NOTOBJ;
     }
     if (facEdg[i]->blind == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Object %d has no data (EG_imprintBody)!\n",
                i/2+1);
       return EGADS_NODATA;
@@ -1832,18 +1832,18 @@ EG_imprintBody(const egObject *src, int nedge, const egObject **facEdg,
   egadsBody *pbody = (egadsBody *) src->blind;
   for (i = 0; i < nedge; i++) {
     if (facEdg[2*i  ]->oclass != FACE) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Object %d is not FACE (EG_imprintBody)!\n", i);
       return EGADS_NOTTOPO;
     }
     egadsFace *pface = (egadsFace *) facEdg[2*i]->blind;
     if (pbody->faces.map.FindIndex(pface->face) <= 0) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Face %d is not in Body (EG_imprintBody)!\n", i);
       return EGADS_NOTBODY;
     }
     if ((facEdg[2*i+1]->oclass != EDGE) && (facEdg[2*i+1]->oclass != LOOP)) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Object %d is not EDGE/LOOP (EG_imprintBody)!\n",
                i);
       return EGADS_NOTTOPO;
@@ -1857,7 +1857,7 @@ EG_imprintBody(const egObject *src, int nedge, const egObject **facEdg,
       }
     }
   }
-  
+
   TopoDS_Shape newShape;
   BRepFeat_SplitShape Split(pbody->shape);
   try {
@@ -1873,7 +1873,7 @@ EG_imprintBody(const egObject *src, int nedge, const egObject **facEdg,
     }
     Split.Build();
     if (!Split.IsDone()) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Can't Split (EG_imprintBody)!\n");
       return EGADS_GEOMERR;
     }
@@ -1944,7 +1944,7 @@ EG_imprintBody(const egObject *src, int nedge, const egObject **facEdg,
     delete pbods;
     return stat;
   }
-  
+
   // map the Attributes
   EG_attriBodyDup(src, obj);
   for (i = 0; i < nedge; i++) {
@@ -1971,78 +1971,78 @@ EG_imprintBody(const egObject *src, int nedge, const egObject **facEdg,
 
 
 int
-EG_filletBody(const egObject *src, int nedge, const egObject **edges, 
+EG_filletBody(const egObject *src, int nedge, const egObject **edges,
               double radius, egObject **result, int **faceMap)
 {
   int      i, k, outLevel, stat, nerr, *fmap;
   egObject *context, *obj, *face, *edge, *node;
-  
+
   *result = NULL;
   if (faceMap != NULL) *faceMap = NULL;
   if  (src == NULL)               return EGADS_NULLOBJ;
   if  (src->magicnumber != MAGIC) return EGADS_NOTOBJ;
   if  (src->oclass != BODY)       return EGADS_NOTBODY;
-  if ((src->mtype != SOLIDBODY) && 
+  if ((src->mtype != SOLIDBODY) &&
       (src->mtype != SHEETBODY))  return EGADS_NOTTOPO;
   if  (src->blind == NULL)        return EGADS_NODATA;
   outLevel = EG_outLevel(src);
   context  = EG_context(src);
-  
+
   if (nedge <= 0) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: No Edges (EG_filletBody)!\n");
     return EGADS_NODATA;
   }
   if (edges == NULL) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: NULL Edge Pointer (EG_filletBody)!\n");
     return EGADS_NULLOBJ;
   }
   egadsBody *pbody = (egadsBody *) src->blind;
   for (k = i = 0; i < nedge; i++) {
     if (edges[i] == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: NULL Edge Object %d (EG_filletBody)!\n", i+1);
       return EGADS_NULLOBJ;
     }
     if (edges[i]->magicnumber != MAGIC) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Edge Object %d is not an EGO (EG_filletBody)!\n",
                i+1);
       return EGADS_NOTOBJ;
     }
     if (edges[i]->oclass != EDGE) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Object %d is not EDGE (EG_filletBody)!\n", i+1);
       return EGADS_NOTTOPO;
     }
     if (edges[i]->blind == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Edge Object %d has no data (EG_filletBody)!\n",
                i+1);
       return EGADS_NODATA;
     }
     egadsEdge *pedge = (egadsEdge *) edges[i]->blind;
     if (pbody->edges.map.FindIndex(pedge->edge) == 0) {
-      if (outLevel > 0) 
-        printf(" EGADS Error: Edge %d is NOT in Body (EG_filletBody)!\n", 
+      if (outLevel > 0)
+        printf(" EGADS Error: Edge %d is NOT in Body (EG_filletBody)!\n",
                i+1);
       return EGADS_NOTBODY;
     }
     if (edges[i]->mtype != DEGENERATE) k++;
   }
   if (k == 0) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: No nonDegenerate Edges (EG_filletBody)!\n");
     return EGADS_NODATA;
   }
   BRepCheck_Analyzer check(pbody->shape);
   if (!check.IsValid()) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Invalid Input Body (EG_filletBody)!\n");
     return EGADS_TOPOERR;
   }
-  
+
   // fillet the body
   BRepFilletAPI_MakeFillet fillet(pbody->shape);
   for (i = 0; i < nedge; i++) {
@@ -2075,7 +2075,7 @@ EG_filletBody(const egObject *src, int nedge, const egObject **edges,
   }
   signal(SIGSEGV, SIG_DFL);
   if (!fillet.IsDone()) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Can't Fillet (EG_filletBody)!\n");
     return EGADS_GEOMERR;
   }
@@ -2086,7 +2086,7 @@ EG_filletBody(const egObject *src, int nedge, const egObject **edges,
     sfs->Perform();
     TopoDS_Shape fixedShape = sfs->Shape();
     if (fixedShape.IsNull()) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Filleted Body is invalid (EG_filletBody)!\n");
       return EGADS_GEOMERR;
     } else {
@@ -2099,7 +2099,7 @@ EG_filletBody(const egObject *src, int nedge, const egObject **edges,
       }
     }
   }
-  
+
   // make sure we have the correct result!
   if (newShape.ShapeType() == TopAbs_COMPOUND) {
     int nshell = 0, nsolid = 0;
@@ -2108,7 +2108,7 @@ EG_filletBody(const egObject *src, int nedge, const egObject **edges,
          Exp.More(); Exp.Next()) nshell++;
     for (Exp.Init(newShape, TopAbs_SOLID); Exp.More(); Exp.Next()) nsolid++;
     if (nshell+nsolid != 1) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Number of Results = %d (EG_filletBody)!\n",
                nshell+nsolid);
       return EGADS_CONSTERR;
@@ -2124,19 +2124,19 @@ EG_filletBody(const egObject *src, int nedge, const egObject **edges,
   }
   if ((newShape.ShapeType() != TopAbs_SOLID) &&
       (newShape.ShapeType() != TopAbs_SHELL)) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Incorrect Result (EG_filletBody)!\n");
     return EGADS_CONSTERR;
   }
-  if ((src->mtype == SOLIDBODY) && 
+  if ((src->mtype == SOLIDBODY) &&
       (newShape.ShapeType() != TopAbs_SOLID)) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Result Not a Solid (EG_filletBody)!\n");
     return EGADS_CONSTERR;
   }
-  if ((src->mtype == SHEETBODY) && 
+  if ((src->mtype == SHEETBODY) &&
       (newShape.ShapeType() != TopAbs_SHELL)) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Result Not a Sheet (EG_filletBody)!\n");
     return EGADS_CONSTERR;
   }
@@ -2163,7 +2163,7 @@ EG_filletBody(const egObject *src, int nedge, const egObject **edges,
     delete pbods;
     return stat;
   }
-  
+
   // map the Attributes
   EG_attriBodyDup(src, obj);
   for (i = 0; i < pbody->faces.map.Extent(); i++) {
@@ -2180,7 +2180,7 @@ EG_filletBody(const egObject *src, int nedge, const egObject **edges,
       }
     }
   }
-  
+
   // face map info: source, modified, generated
   if (faceMap != NULL) {
     fmap = (int *) EG_alloc(2*pbods->faces.map.Extent()*sizeof(int));
@@ -2257,36 +2257,36 @@ EG_filletBody(const egObject *src, int nedge, const egObject **edges,
 
 
 int
-EG_chamferBody(const egObject *src, int nedge, const egObject **edges, 
-               const egObject **faces, double dis1, double dis2, 
+EG_chamferBody(const egObject *src, int nedge, const egObject **edges,
+               const egObject **faces, double dis1, double dis2,
                egObject **result, int **faceMap)
 {
   int      i, k, outLevel, stat, nerr, *fmap;
   egObject *context, *obj, *face, *edge, *node;
-  
+
   *result = NULL;
   if (faceMap != NULL) *faceMap = NULL;
   if  (src == NULL)               return EGADS_NULLOBJ;
   if  (src->magicnumber != MAGIC) return EGADS_NOTOBJ;
   if  (src->oclass != BODY)       return EGADS_NOTBODY;
-  if ((src->mtype != SOLIDBODY) && 
+  if ((src->mtype != SOLIDBODY) &&
       (src->mtype != SHEETBODY))  return EGADS_NOTTOPO;
   if  (src->blind == NULL)        return EGADS_NODATA;
   outLevel = EG_outLevel(src);
   context  = EG_context(src);
-  
+
   if (nedge <= 0) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: No Edges (EG_chamferBody)!\n");
     return EGADS_NODATA;
   }
   if (edges == NULL) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: NULL Edge Pointer (EG_chamferBody)!\n");
     return EGADS_NULLOBJ;
   }
   if (faces == NULL) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: NULL Face Pointer (EG_chamferBody)!\n");
     return EGADS_NULLOBJ;
   }
@@ -2294,78 +2294,78 @@ EG_chamferBody(const egObject *src, int nedge, const egObject **edges,
   for (k = i = 0; i < nedge; i++) {
 
     if (edges[i] == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: NULL Edge Object %d (EG_chamferBody)!\n", i+1);
       return EGADS_NULLOBJ;
     }
     if (edges[i]->magicnumber != MAGIC) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Edge Object %d is not an EGO (EG_chamferBody)!\n",
                i+1);
       return EGADS_NOTOBJ;
     }
     if (edges[i]->oclass != EDGE) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Object %d is not EDGE (EG_chamferBody)!\n", i+1);
       return EGADS_NOTTOPO;
     }
     if (edges[i]->blind == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Edge Object %d has no data (EG_chamferBody)!\n",
                i+1);
       return EGADS_NODATA;
     }
     egadsEdge *pedge = (egadsEdge *) edges[i]->blind;
     if (pbody->edges.map.FindIndex(pedge->edge) == 0) {
-      if (outLevel > 0) 
-        printf(" EGADS Error: Edge %d is NOT in Body (EG_chamferBody)!\n", 
+      if (outLevel > 0)
+        printf(" EGADS Error: Edge %d is NOT in Body (EG_chamferBody)!\n",
                i+1);
       return EGADS_NOTBODY;
     }
     if (edges[i]->mtype != DEGENERATE) k++;
 
     if (faces[i] == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: NULL Face Object %d (EG_chamferBody)!\n", i+1);
       return EGADS_NULLOBJ;
     }
     if (faces[i]->magicnumber != MAGIC) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Face Object %d is not an EGO (EG_chamferBody)!\n",
                i+1);
       return EGADS_NOTOBJ;
     }
     if (faces[i]->oclass != FACE) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Object %d is not FACE (EG_chamferBody)!\n", i+1);
       return EGADS_NOTTOPO;
     }
     if (faces[i]->blind == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Face Object %d has no data (EG_chamferBody)!\n",
                i+1);
       return EGADS_NODATA;
     }
     egadsFace *pface = (egadsFace *) faces[i]->blind;
     if (pbody->faces.map.FindIndex(pface->face) == 0) {
-      if (outLevel > 0) 
-        printf(" EGADS Error: Face %d is NOT in Body (EG_chamferBody)!\n", 
+      if (outLevel > 0)
+        printf(" EGADS Error: Face %d is NOT in Body (EG_chamferBody)!\n",
                i+1);
       return EGADS_NOTBODY;
     }
   }
   if (k == 0) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: No nonDegenerate Edges (EG_chamferBody)!\n");
     return EGADS_NODATA;
   }
   BRepCheck_Analyzer check(pbody->shape);
   if (!check.IsValid()) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Invalid Input Body (EG_chamferBody)!\n");
     return EGADS_TOPOERR;
   }
-  
+
   // chamfer the body
   BRepFilletAPI_MakeChamfer chamfer(pbody->shape);
   for (i = 0; i < nedge; i++) {
@@ -2399,7 +2399,7 @@ EG_chamferBody(const egObject *src, int nedge, const egObject **edges,
   }
   signal(SIGSEGV, SIG_DFL);
   if (!chamfer.IsDone()) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Can't Chamfer (EG_chamferBody)!\n");
     return EGADS_GEOMERR;
   }
@@ -2410,7 +2410,7 @@ EG_chamferBody(const egObject *src, int nedge, const egObject **edges,
     sfs->Perform();
     TopoDS_Shape fixedShape = sfs->Shape();
     if (fixedShape.IsNull()) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Chamfered Body is invalid (EG_chamferBody)!\n");
       return EGADS_GEOMERR;
     } else {
@@ -2423,7 +2423,7 @@ EG_chamferBody(const egObject *src, int nedge, const egObject **edges,
       }
     }
   }
-  
+
   // make sure we have the correct result!
   if (newShape.ShapeType() == TopAbs_COMPOUND) {
     int nshell = 0, nsolid = 0;
@@ -2432,7 +2432,7 @@ EG_chamferBody(const egObject *src, int nedge, const egObject **edges,
          Exp.More(); Exp.Next()) nshell++;
     for (Exp.Init(newShape, TopAbs_SOLID); Exp.More(); Exp.Next()) nsolid++;
     if (nshell+nsolid != 1) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Number of Results = %d (EG_chamferBody)!\n",
                nshell+nsolid);
       return EGADS_CONSTERR;
@@ -2448,19 +2448,19 @@ EG_chamferBody(const egObject *src, int nedge, const egObject **edges,
   }
   if ((newShape.ShapeType() != TopAbs_SOLID) &&
       (newShape.ShapeType() != TopAbs_SHELL)) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Incorrect Result (EG_chamferBody)!\n");
     return EGADS_CONSTERR;
   }
-  if ((src->mtype == SOLIDBODY) && 
+  if ((src->mtype == SOLIDBODY) &&
       (newShape.ShapeType() != TopAbs_SOLID)) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Result Not a Solid (EG_chamferBody)!\n");
     return EGADS_CONSTERR;
   }
-  if ((src->mtype == SHEETBODY) && 
+  if ((src->mtype == SHEETBODY) &&
       (newShape.ShapeType() != TopAbs_SHELL)) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Result Not a Sheet (EG_chamferBody)!\n");
     return EGADS_CONSTERR;
   }
@@ -2487,7 +2487,7 @@ EG_chamferBody(const egObject *src, int nedge, const egObject **edges,
     delete pbods;
     return stat;
   }
-  
+
   // map the Attributes
   EG_attriBodyDup(src, obj);
   for (i = 0; i < pbody->faces.map.Extent(); i++) {
@@ -2504,7 +2504,7 @@ EG_chamferBody(const egObject *src, int nedge, const egObject **edges,
       }
     }
   }
-  
+
   // face map info: source, modified, generated
   if (faceMap != NULL) {
     fmap = (int *) EG_alloc(2*pbods->faces.map.Extent()*sizeof(int));
@@ -2581,13 +2581,13 @@ EG_chamferBody(const egObject *src, int nedge, const egObject **edges,
 
 
 int
-EG_hollowBody(const egObject *src, int nface, const egObject **faces, 
+EG_hollowBody(const egObject *src, int nface, const egObject **faces,
               double offset, int joined, egObject **result, int **faceMap)
 {
   int      i, outLevel, stat, nerr, *fmap;
   double   tol = Precision::Confusion();
   egObject *context, *obj, *face, *edge, *node;
-  
+
   *result = NULL;
   if (faceMap != NULL) *faceMap = NULL;
   if  (src == NULL)                return EGADS_NULLOBJ;
@@ -2607,12 +2607,12 @@ EG_hollowBody(const egObject *src, int nface, const egObject **faces,
     }
   }
   if (nface < 0) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: No Faces (EG_hollowBody)!\n");
     return EGADS_NODATA;
   }
   if ((faces == NULL) && (nface > 0)) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: NULL Face Pointer (EG_hollowBody)!\n");
     return EGADS_NULLOBJ;
   }
@@ -2620,31 +2620,31 @@ EG_hollowBody(const egObject *src, int nface, const egObject **faces,
   egadsBody *pbody = (egadsBody *) src->blind;
   for (i = 0; i < nface; i++) {
     if (faces[i] == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: NULL Face Object %d (EG_hollowBody)!\n", i+1);
       return EGADS_NULLOBJ;
     }
     if (faces[i]->magicnumber != MAGIC) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Face Object %d is not an EGO (EG_hollowBody)!\n",
                i+1);
       return EGADS_NOTOBJ;
     }
     if (faces[i]->oclass != FACE) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Object %d is not FACE (EG_hollowBody)!\n", i+1);
       return EGADS_NOTTOPO;
     }
     if (faces[i]->blind == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Face Object %d has no data (EG_hollowBody)!\n",
                i+1);
       return EGADS_NODATA;
     }
     egadsFace *pface = (egadsFace *) faces[i]->blind;
     if (pbody->faces.map.FindIndex(pface->face) == 0) {
-      if (outLevel > 0) 
-        printf(" EGADS Error: Face %d is NOT in Body (EG_hollowBody)!\n", 
+      if (outLevel > 0)
+        printf(" EGADS Error: Face %d is NOT in Body (EG_hollowBody)!\n",
                i+1);
       return EGADS_NOTBODY;
     }
@@ -2654,14 +2654,14 @@ EG_hollowBody(const egObject *src, int nface, const egObject **faces,
   }
   BRepCheck_Analyzer check(pbody->shape);
   if (!check.IsValid()) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Invalid Input Body (EG_hollowBody)!\n");
     return EGADS_TOPOERR;
   }
-  
+
   GeomAbs_JoinType join = GeomAbs_Arc;
   if (joined == 1) join = GeomAbs_Intersection;
-  
+
   if (nface == 0) {
     // offset the body
     TopoDS_Shape newShape;
@@ -2687,7 +2687,7 @@ EG_hollowBody(const egObject *src, int nface, const egObject **faces,
       sfs->Perform();
       TopoDS_Shape fixedShape = sfs->Shape();
       if (fixedShape.IsNull()) {
-        if (outLevel > 0) 
+        if (outLevel > 0)
           printf(" EGADS Error: Offset Body is invalid (EG_hollowBody)!\n");
         return EGADS_GEOMERR;
       } else {
@@ -2841,12 +2841,12 @@ EG_hollowBody(const egObject *src, int nface, const egObject **faces,
         *faceMap = fmap;
       }
     }
-    
+
     EG_referenceObject(obj, context);
     *result = obj;
     return EGADS_SUCCESS;
   }
-  
+
   // hollow the body
   signal(SIGSEGV, segfault_handler);
   switch (stat = setjmp(jmpenv)) {
@@ -2878,7 +2878,7 @@ EG_hollowBody(const egObject *src, int nface, const egObject **faces,
             }
           }
         }
-  
+
         // make sure we have the correct result!
         if (newShape.ShapeType() == TopAbs_COMPOUND) {
           int nsolid = 0;
@@ -2920,7 +2920,7 @@ EG_hollowBody(const egObject *src, int nface, const egObject **faces,
           signal(SIGSEGV, SIG_DFL);
           return stat;
         }
-  
+
         // map the Attributes
         EG_attriBodyDup(src, obj);
         for (i = 0; i < pbody->faces.map.Extent(); i++) {
@@ -3023,7 +3023,7 @@ EG_hollowBody(const egObject *src, int nface, const egObject **faces,
             *faceMap = fmap;
           }
         }
-        
+
       }
       catch (Standard_Failure) {
         printf(" EGADS Error: MakeThickSolid Exception (EG_hollowBody)!\n");
@@ -3052,21 +3052,21 @@ EG_hollowBody(const egObject *src, int nface, const egObject **faces,
 
 
 int
-EG_extrude(const egObject *src, double dist, const double *dir, 
+EG_extrude(const egObject *src, double dist, const double *dir,
                  egObject **result)
 {
   int          outLevel, stat, mtype, nerr;
   double       d, vec[3];
   egObject     *context, *obj;
   TopoDS_Shape shape, newShape;
-  
+
   *result = NULL;
   if (src == NULL)               return EGADS_NULLOBJ;
   if (src->magicnumber != MAGIC) return EGADS_NOTOBJ;
   if (src->blind == NULL)        return EGADS_NODATA;
   outLevel = EG_outLevel(src);
   context  = EG_context(src);
-  
+
   mtype = SOLIDBODY;
   if  (src->oclass == BODY) {
     if ((src->mtype == WIREBODY) || (src->mtype == FACEBODY)) {
@@ -3074,7 +3074,7 @@ EG_extrude(const egObject *src, double dist, const double *dir,
       shape = pbody->shape;
       if (src->mtype == WIREBODY) mtype = SHEETBODY;
     } else {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Body src must be Wire or Face (EG_extrude)!\n");
       return EGADS_NOTTOPO;
     }
@@ -3086,14 +3086,14 @@ EG_extrude(const egObject *src, double dist, const double *dir,
     egadsFace *pface = (egadsFace *) src->blind;
     shape = pface->face;
   } else {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Invalid src type (EG_extrude)!\n");
     return EGADS_NOTTOPO;
   }
-  
+
   d = sqrt(dir[0]*dir[0] + dir[1]*dir[1] + dir[2]*dir[2]);
   if (d == 0.0) {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Invalid Direction (EG_extrude)!\n");
     return EGADS_GEOMERR;
   }
@@ -3113,7 +3113,7 @@ EG_extrude(const egObject *src, double dist, const double *dir,
     printf(" EGADS Error: MakePrism Exception (EG_extrude)!\n");
     return EGADS_GEOMERR;
   }
- 
+
   stat = EG_makeObject(context, &obj);
   if (stat != EGADS_SUCCESS) {
     if (outLevel > 0)
@@ -3136,7 +3136,7 @@ EG_extrude(const egObject *src, double dist, const double *dir,
     delete pbods;
     return stat;
   }
-  
+
   // do we want to do anything with attributes?
 
   EG_referenceObject(obj, context);
@@ -3146,20 +3146,20 @@ EG_extrude(const egObject *src, double dist, const double *dir,
 
 
 int
-EG_rotate(const egObject *src, double angle, const double *axis, 
+EG_rotate(const egObject *src, double angle, const double *axis,
                 egObject **result)
 {
   int          outLevel, stat, mtype, nerr;
   egObject     *context, *obj;
   TopoDS_Shape shape, newShape;
-  
+
   *result = NULL;
   if (src == NULL)               return EGADS_NULLOBJ;
   if (src->magicnumber != MAGIC) return EGADS_NOTOBJ;
   if (src->blind == NULL)        return EGADS_NODATA;
   outLevel = EG_outLevel(src);
   context  = EG_context(src);
-  
+
   mtype = SOLIDBODY;
   if  (src->oclass == BODY) {
     if ((src->mtype == WIREBODY) || (src->mtype == FACEBODY)) {
@@ -3167,7 +3167,7 @@ EG_rotate(const egObject *src, double angle, const double *axis,
       shape = pbody->shape;
       if (src->mtype == WIREBODY) mtype = SHEETBODY;
     } else {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Body src must be Wire or Face (EG_rotate)!\n");
       return EGADS_NOTTOPO;
     }
@@ -3179,7 +3179,7 @@ EG_rotate(const egObject *src, double angle, const double *axis,
     egadsFace *pface = (egadsFace *) src->blind;
     shape = pface->face;
   } else {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Invalid src type (EG_rotate)!\n");
     return EGADS_NOTTOPO;
   }
@@ -3203,7 +3203,7 @@ EG_rotate(const egObject *src, double angle, const double *axis,
   catch (...) {
     printf(" EGADS Error: MakeRevol Exception (EG_rotate)!\n");
     return EGADS_GEOMERR;
-  } 
+  }
 
   stat = EG_makeObject(context, &obj);
   if (stat != EGADS_SUCCESS) {
@@ -3227,7 +3227,7 @@ EG_rotate(const egObject *src, double angle, const double *axis,
     delete pbods;
     return stat;
   }
-  
+
   // do we want to do anything with attributes?
 
   EG_referenceObject(obj, context);
@@ -3244,14 +3244,14 @@ EG_sweep(const egObject *src, const egObject *spine, int mode,
   egObject     *context, *obj;
   TopoDS_Shape shape, newShape;
   TopoDS_Wire  wire;
-  
+
   *result = NULL;
   if (src == NULL)               return EGADS_NULLOBJ;
   if (src->magicnumber != MAGIC) return EGADS_NOTOBJ;
   if (src->blind == NULL)        return EGADS_NODATA;
   outLevel = EG_outLevel(src);
   context  = EG_context(src);
-  
+
   if (spine == NULL) {
     if (outLevel > 0)
       printf(" EGADS Error: NULL edge Reference (EG_sweep)!\n");
@@ -3331,7 +3331,7 @@ EG_sweep(const egObject *src, const egObject *spine, int mode,
       shape = pbody->shape;
       if (src->mtype == WIREBODY) mtype = SHEETBODY;
     } else {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Body src must be Wire or Face (EG_sweep)!\n");
       return EGADS_NOTTOPO;
     }
@@ -3343,7 +3343,7 @@ EG_sweep(const egObject *src, const egObject *spine, int mode,
     egadsFace *pface = (egadsFace *) src->blind;
     shape = pface->face;
   } else {
-    if (outLevel > 0) 
+    if (outLevel > 0)
       printf(" EGADS Error: Invalid src type (EG_sweep)!\n");
     return EGADS_NOTTOPO;
   }
@@ -3373,13 +3373,13 @@ EG_sweep(const egObject *src, const egObject *spine, int mode,
   }
   if (mtype == SOLIDBODY) {
     if (newShape.ShapeType() != TopAbs_SOLID) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Sweep Result Not a Solid (EG_sweep)!\n");
       return EGADS_CONSTERR;
     }
   } else {
     if (newShape.ShapeType() != TopAbs_SHELL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Sweep Result Not a Shell (EG_sweep)!\n");
       return EGADS_CONSTERR;
     }
@@ -3399,7 +3399,7 @@ EG_sweep(const egObject *src, const egObject *spine, int mode,
     }
     BRepCheck_Analyzer fxCheck(fixedShape);
     if (!fxCheck.IsValid()) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Info: Result is invalid (EG_sweep)!\n");
       return EGADS_CONSTERR;
     }
@@ -3428,7 +3428,7 @@ EG_sweep(const egObject *src, const egObject *spine, int mode,
     delete pbods;
     return stat;
   }
-  
+
   // do we want to do anything with attributes?
   //       can get end-caps & generated
 
@@ -3443,7 +3443,7 @@ EG_loft(int nsec, const egObject **secs, int opt, egObject **result)
 {
   int      i, outLevel, stat, nerr;
   egObject *context, *obj;
-  
+
   *result = NULL;
   if (nsec <= 1)                     return EGADS_EMPTY;
   if (secs == NULL)                  return EGADS_NULLOBJ;
@@ -3454,17 +3454,17 @@ EG_loft(int nsec, const egObject **secs, int opt, egObject **result)
 
   for (i = 0; i < nsec; i++) {
     if (secs[i] == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: NULL Section Object %d (EG_loft)!\n", i+1);
       return EGADS_NULLOBJ;
     }
     if (secs[i]->magicnumber != MAGIC) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Section %d is not an EGO (EG_loft)!\n", i+1);
       return EGADS_NOTOBJ;
     }
     if (secs[i]->blind == NULL) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Section %d has no data (EG_loft)!\n", i+1);
       return EGADS_NODATA;
     }
@@ -3475,25 +3475,25 @@ EG_loft(int nsec, const egObject **secs, int opt, egObject **result)
     }
     if (secs[i]->oclass == NODE) {
       if ((i != 0) && (i != nsec-1)) {
-        if (outLevel > 0) 
+        if (outLevel > 0)
           printf(" EGADS Error: Section %d is Node and not Bound (EG_loft)!\n",
                  i+1);
         return EGADS_NOTTOPO;
       }
     } else if (secs[i]->oclass == BODY) {
       if (secs[i]->mtype != WIREBODY) {
-        if (outLevel > 0) 
-          printf(" EGADS Error: Section %d is Not a WireBody (EG_loft)!\n", 
+        if (outLevel > 0)
+          printf(" EGADS Error: Section %d is Not a WireBody (EG_loft)!\n",
                  i+1);
         return EGADS_NOTTOPO;
       }
     } else if (secs[i]->oclass != LOOP) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Section %d is Not a Loop (EG_loft)!\n", i+1);
       return EGADS_NOTTOPO;
     }
   }
-  
+
   Standard_Boolean isSolid = ((opt&1) == 1);
   Standard_Boolean isRuled = ((opt&2) == 2);
   TopoDS_Shape     newShape;
@@ -3511,10 +3511,10 @@ EG_loft(int nsec, const egObject **secs, int opt, egObject **result)
       } else {
         egadsLoop *ploop = (egadsLoop *) secs[i]->blind;
         loft.AddWire(ploop->loop);
-      }  
+      }
     loft.Build();
     if (!loft.IsDone()) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Error: Can't Loft (EG_loft)!\n");
       return EGADS_GEOMERR;
     }
@@ -3530,7 +3530,7 @@ EG_loft(int nsec, const egObject **secs, int opt, egObject **result)
     printf(" EGADS Error: ThruSections Exception (EG_loft)!\n");
     return EGADS_GEOMERR;
   }
-  
+
   // are we OK?
   BRepCheck_Analyzer check(newShape);
   if (!check.IsValid()) {
@@ -3545,7 +3545,7 @@ EG_loft(int nsec, const egObject **secs, int opt, egObject **result)
     }
     BRepCheck_Analyzer fxCheck(fixedShape);
     if (!fxCheck.IsValid()) {
-      if (outLevel > 0) 
+      if (outLevel > 0)
         printf(" EGADS Info: Result is invalid (EG_loft)!\n");
       return EGADS_CONSTERR;
     }
@@ -3575,7 +3575,7 @@ EG_loft(int nsec, const egObject **secs, int opt, egObject **result)
     delete pbods;
     return stat;
   }
-  
+
   // do we want to do anything with attributes?
 
   EG_referenceObject(obj, context);
