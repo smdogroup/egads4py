@@ -1,6 +1,7 @@
 import os
 from glob import glob
 from subprocess import check_output
+import re
 
 # Import numpy
 import numpy
@@ -17,6 +18,14 @@ def get_global_dir(files):
     for f in files:
         new.append(os.path.join(tmr_root, f))
     return new
+
+# Find all libraries from OpenCASCADE
+def find_opencascade_libs():
+    libs = os.listdir(os.path.join(os.environ['CASROOT'], 'lib'))
+    libs = [f for f in libs if re.match(r"lib.*\.so$", f)]
+    libs = [re.sub(r"lib(.*)\.so$", r"\1", f) for f in libs]
+    return libs
+
 
 # Relative paths for the include/library directories
 rel_inc_dirs = ['include', 'src', 'src/Surreal']
@@ -45,11 +54,8 @@ for sufix in ['include/oce', 'inc', 'include']:
         break
 
 # Add the libraries from OpenCascade
-libs.extend(['TKBool', 'TKernel', 'TKFeat', 'TKBO', 'TKGeomAlgo',
-             'TKMath', 'TKOffset', 'TKPrim', 'TKPShape', 'TKTopAlgo',
-             'TKBRep', 'TKG2d', 'TKG3d', 'TKGeomBase', 'TKShHealing',
-             'TKSTEP', 'TKSTEP209', 'TKSTEPBase', 'TKSTEPAttr',
-             'TKXSBase', 'TKIGES', 'TKFillet', 'PTKernel', 'dl' ])
+libs.extend(find_opencascade_libs())
+libs.extend(['dl'])
 
 exts = []
 

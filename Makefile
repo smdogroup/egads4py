@@ -21,10 +21,12 @@ debug:
 	done
 	${CXX} ${SO_LINK_FLAGS} ${EGADS_OBJS} ${EGADS_EXTERN_LIBS} -o ${EGADS_DIR}/lib/libegads.${SO_EXT}
 
+interface:
+	${PYTHON} setup.py build_ext --inplace
+
 clean:
 	${RM} lib/*.a lib/*.so
 	@for subdir in $(EGADS_SUBDIRS) ; do \
 	    echo "making $@ in $$subdir"; \
 	    echo; (cd $$subdir && $(MAKE) clean EGADS_DIR=${EGADS_DIR}) || exit 1; \
 	done
-

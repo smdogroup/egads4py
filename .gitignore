@@ -38,3 +38,6 @@ extern/
 *.STEP
 *.stp
 *.step
+
+egads4py/*.c
+egads4py/*.cpp

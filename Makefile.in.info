@@ -5,6 +5,7 @@ EGADS_DIR = ${HOME}/git/egads4py
 CC = mpicc
 CXX = mpicxx
 RM = rm -f
+PYTHON=python3
 
 # Flags for debugging and regular compilation versions
 EGADS_DEBUG_FLAGS = -fPIC -g
@@ -28,6 +29,9 @@ SO_LINK_FLAGS=-fPIC -shared
 # SO_EXT=so
 # SO_LINK_FLAGS=-fPIC -dynamiclib
 
-OPENCASCADE_INCLUDE = -I${CASROOT}/${CASARCH}/inc
+OPENCASCADE_INCLUDE = -I${CASROOT}/${CASARCH}/include/opencascade
 OPENCASCADE_LIB_PATH = -L${CASROOT}/${CASARCH}/lib -Wl,-rpath,${CASROOT}/${CASARCH}/lib
-OPENCASCADE_LIBS = -lTKBool -lTKernel -lTKFeat -lTKBO -lTKGeomAlgo -lTKMath -lTKOffset -lTKPrim -lTKPShape -lTKTopAlgo -lTKBRep -lTKG2d -lTKG3d -lTKGeomBase -lTKShHealing -lTKSTEP -lTKSTEP209 -lTKSTEPBase -lTKSTEPAttr -lTKXSBase -lTKIGES -lTKFillet -lPTKernel -ldl
+
+# find all libraries in $CASROOT/lib
+OPENCASCADE_LIBS = $(shell cd $(CASROOT)/lib && ls lib*.so | sed -E "s/lib(.*)\.so/-l\1/g") -ldl
+
