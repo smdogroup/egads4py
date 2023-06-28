@@ -25,8 +25,8 @@
   extern "C" int  EG_destroyTopology( egObject *topo );
 
   extern "C" int  EG_loadModel( egObject *context, int bflg, const char *name, 
-                                egObject **model );
-  extern "C" int  EG_saveModel( const egObject *model, const char *name );
+                                const char *units, egObject **model );
+  extern "C" int  EG_saveModel( const egObject *model, const char *name, const char *units );
 
   extern     void EG_splitPeriodics( egadsBody *body );
   extern     void EG_splitMultiplicity( egadsBody *body, int outLevel );
@@ -467,7 +467,7 @@ EG_initOCC()
 
 int
 EG_loadModel(egObject *context, int bflg, const char *name, 
-             egObject **model)
+             const char *units, egObject **model)
 {
   int          i, j, stat, outLevel, len, nattr, nerr, egads = 0;
   egObject     *omodel, *aobj;
@@ -514,6 +514,7 @@ EG_loadModel(egObject *context, int bflg, const char *name,
     /* STEP files */
 
     STEPControl_Reader aReader;
+    Interface_Static::SetCVal("xstep.cascade.unit",units);
     IFSelect_ReturnStatus status = aReader.ReadFile(name);
     if (status != IFSelect_RetDone) {
       if (outLevel > 0)
@@ -561,6 +562,7 @@ EG_loadModel(egObject *context, int bflg, const char *name,
     /* IGES files */
     
     IGESControl_Reader iReader;
+    Interface_Static::SetCVal("xstep.cascade.unit",units);
     Standard_Integer stats = iReader.ReadFile(name);
     if (stats != IFSelect_RetDone) {
       if (outLevel > 0)
@@ -1011,7 +1013,7 @@ EG_writeAttrs(const egObject *obj, FILE *fp)
 
 
 int
-EG_saveModel(const egObject *model, const char *name)
+EG_saveModel(const egObject *model, const char *name, const char *units)
 {
   int         i, len, outLevel;
   egadsModel *mshape;
@@ -1057,6 +1059,7 @@ EG_saveModel(const egObject *model, const char *name)
     /* STEP files */
     
     STEPControl_Writer aWriter;
+    Interface_Static::SetCVal("write.step.unit",units);
     TopExp_Explorer Exp;
     const STEPControl_StepModelType aVal = STEPControl_AsIs;
     for (Exp.Init(mshape->shape, TopAbs_WIRE,  TopAbs_FACE);
@@ -1081,6 +1084,7 @@ EG_saveModel(const egObject *model, const char *name)
     try {
       IGESControl_Controller::Init();
       IGESControl_Writer iWrite;
+      Interface_Static::SetCVal("write.iges.unit",units);
       TopExp_Explorer Exp;
       for (Exp.Init(mshape->shape, TopAbs_WIRE,  TopAbs_FACE);
            Exp.More(); Exp.Next()) iWrite.AddShape(Exp.Current());

@@ -41,8 +41,8 @@ __ProtoExt__ void EG_free( /*@null@*/ /*@only@*/ void *pointer );
 __ProtoExt__ void EG_revision( int *major, int *minor, const char **OCCrev );
 __ProtoExt__ int  EG_open( ego *context );
 __ProtoExt__ int  EG_loadModel( ego context, int bflg, const char *name, 
-                                ego *model );
-__ProtoExt__ int  EG_saveModel( const ego model, const char *name );
+                                const char *units, ego *model );
+__ProtoExt__ int  EG_saveModel( const ego model, const char *name, const char *units );
 __ProtoExt__ int  EG_deleteObject( ego object );
 __ProtoExt__ int  EG_referenceObject( ego object, const ego context );
 __ProtoExt__ int  EG_dereferenceObject( ego object, const ego context );
