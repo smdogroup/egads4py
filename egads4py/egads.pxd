@@ -150,8 +150,8 @@ cdef extern from "egads.h":
     void EG_revision( int *major, int *minor, const char **OCCrev )
     int  EG_open( ego *context )
     int  EG_loadModel( ego context, int bflg, const char *name,
-                       ego *model )
-    int  EG_saveModel( const ego model, const char *name )
+                       const char *units, ego *model )
+    int  EG_saveModel( const ego model, const char *name, const char *units )
     int  EG_deleteObject( ego object )
     int  EG_referenceObject( ego object, const ego context )
     int  EG_dereferenceObject( ego object, const ego context )

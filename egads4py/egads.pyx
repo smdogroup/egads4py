@@ -639,7 +639,7 @@ cdef class context:
             return new_obj
         return None
 
-    def loadModel(self, fname, split=False):
+    def loadModel(self, fname, split=False, units="M"):
         """
         Loads a MODEL object from a file
 
@@ -647,17 +647,20 @@ cdef class context:
         ----------
         fname:     the file name to load
         split:     split closed/periodic entries
+        units:     the units to convert to when reading geometry model (IGES/STEP)
 
         returns:   the MODEL object
         """
         cdef int stat
         cdef int bflag = 1
-        cdef char *filename = NULL
+        cdef char filename[512]
+        cdef char c_units[512] 
         if split:
             bflag = 2
         new_obj = pyego(self)
         filename = egads_convert_to_chars(fname)
-        stat = EG_loadModel(self.context, bflag, filename, &new_obj.ptr)
+        c_units = egads_convert_to_chars(units)
+        stat = EG_loadModel(self.context, bflag, filename, c_units, &new_obj.ptr)
         if stat:
             _checkErr(stat)
         return new_obj
@@ -888,15 +891,18 @@ cdef class pyego:
         oclass, mtype = self.getInfo()
         return oclass_str[oclass]
 
-    def saveModel(self, fname, overwrite=False):
+    def saveModel(self, fname, units="M", overwrite=False):
         """
         Saves the model based on the filename extension
         """
         cdef int stat
-        cdef char* filename = egads_convert_to_chars(fname)
+        cdef char filename[512]
+        filename = egads_convert_to_chars(fname)
+        cdef char c_units[512] 
+        c_units = egads_convert_to_chars(units)
         if overwrite and os.path.exists(filename):
             os.remove(filename)
-        stat = EG_saveModel(self.ptr, filename)
+        stat = EG_saveModel(self.ptr, filename, c_units)
         if stat:
             _checkErr(stat)
 

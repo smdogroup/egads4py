@@ -180,6 +180,7 @@
 #include <TopOpeBRepTool_SolidClassifier.hxx>
 #include <TopOpeBRep_PointClassifier.hxx>
 
+#include <Interface_Static.hxx>
 #include <IGESControl_Controller.hxx>
 #include <IGESControl_Reader.hxx>
 #include <IGESControl_Writer.hxx>
