@@ -35,3 +35,5 @@ OPENCASCADE_LIB_PATH = -L${CASROOT}/${CASARCH}/lib -Wl,-rpath,${CASROOT}/${CASAR
 # find all libraries in $CASROOT/lib
 OPENCASCADE_LIBS = $(shell cd $(CASROOT)/lib && ls lib*.so | sed -E "s/lib(.*)\.so/-l\1/g") -ldl
 
+# For Mac OS, use the following command
+# OPENCASCADE_LIBS = $(shell cd $(CASROOT)/lib && ls lib*.dylib | sed -E "s/[a-zA-Z0-9]*\.[0-9].*//g" | sed -E "s/lib(.*)\.dylib/-l\1/g") -ldl
