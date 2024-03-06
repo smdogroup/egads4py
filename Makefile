@@ -22,7 +22,7 @@ debug:
 	${CXX} ${SO_LINK_FLAGS} ${EGADS_OBJS} ${EGADS_EXTERN_LIBS} -o ${EGADS_DIR}/lib/libegads.${SO_EXT}
 
 interface:
-	${PYTHON} setup.py build_ext --inplace
+	pip install -e .\[all\]
 
 clean:
 	${RM} lib/*.a lib/*.so

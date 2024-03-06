@@ -5,9 +5,6 @@ from libc.stdlib cimport malloc, free
 # Import numpy
 cimport numpy as np
 
-# Import the definitions
-from egads cimport *
-
 # Import os for file I/O
 import os
 
