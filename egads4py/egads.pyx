@@ -4,6 +4,10 @@ from libc.stdlib cimport malloc, free
 
 # Import numpy
 cimport numpy as np
+import numpy as np
+
+# Ensure that numpy is initialized
+np.import_array()
 
 # Import os for file I/O
 import os
@@ -651,7 +655,7 @@ cdef class context:
         cdef int stat
         cdef int bflag = 1
         cdef char filename[512]
-        cdef char c_units[512] 
+        cdef char c_units[512]
         if split:
             bflag = 2
         new_obj = pyego(self)
@@ -895,7 +899,7 @@ cdef class pyego:
         cdef int stat
         cdef char filename[512]
         filename = egads_convert_to_chars(fname)
-        cdef char c_units[512] 
+        cdef char c_units[512]
         c_units = egads_convert_to_chars(units)
         if overwrite and os.path.exists(filename):
             os.remove(filename)
